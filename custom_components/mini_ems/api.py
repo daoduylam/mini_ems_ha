@@ -149,6 +149,7 @@ class MiniEmsApi:
 
     async def async_get_inverter_data(self, inverter_name: str) -> dict | None:
         """Get real-time data for a specific inverter by serial number."""
+        target = (inverter_name or "").strip().lower()
         # Try with name filter in body
         data = await self._post(
             "/dn/system/data/list",
@@ -157,12 +158,14 @@ class MiniEmsApi:
         )
         rows = data.get("rows", [])
         for dev in rows:
-            if dev.get("inverterName") == inverter_name:
+            name = str(dev.get("inverterName") or dev.get("sn") or "").strip().lower()
+            if name == target:
                 return dev
         # Fallback: scan all pages
         all_devs = await self.async_get_all_inverters()
         for dev in all_devs:
-            if dev.get("inverterName") == inverter_name:
+            name = str(dev.get("inverterName") or dev.get("sn") or "").strip().lower()
+            if name == target:
                 return dev
         return rows[0] if rows else None
 
@@ -413,10 +416,27 @@ class MiniEmsApi:
                 if not inv:
                     inv = {}
 
-                # Gộp dữ liệu: Ưu tiên batterySOC từ cloud app nếu có giá trị mới nhất
-                if cloud_dev.get("batterySOC") is not None:
-                    inv["batterySOC"] = cloud_dev["batterySOC"]
-                if cloud_dev.get("batteryVoltage") is not None and not inv.get("batteryVoltage"):
+                # Gộp dữ liệu: Trích xuất mọi trường SOC từ cloud app
+                soc_val = (
+                    cloud_dev.get("batterySOC")
+                    if cloud_dev.get("batterySOC") is not None
+                    else (
+                        cloud_dev.get("soc")
+                        if cloud_dev.get("soc") is not None
+                        else (
+                            cloud_dev.get("bmsSoc")
+                            if cloud_dev.get("bmsSoc") is not None
+                            else cloud_dev.get("batterySoc")
+                        )
+                    )
+                )
+                if soc_val is not None:
+                    try:
+                        inv["batterySOC"] = int(float(soc_val))
+                    except (ValueError, TypeError):
+                        pass
+
+                if cloud_dev.get("batteryVoltage") is not None:
                     inv["batteryVoltage"] = cloud_dev["batteryVoltage"]
                 if cloud_dev.get("batteryPower") is not None and not inv.get("batteryPower"):
                     inv["batteryPower"] = cloud_dev["batteryPower"]
