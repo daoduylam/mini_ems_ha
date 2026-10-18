@@ -163,6 +163,17 @@ POST /dn/send/instructions/sendIn           → Remote control
 
 ---
 
+## 🎨 Giao diện mẫu (Lovelace Dashboard Master Card)
+
+Kho lưu trữ đã có sẵn một **Thẻ Dashboard cao cấp (Vector Real-time, Kính mờ Neon)** được tích hợp công nghệ **Tự Động Dò Tìm Thực Thể (Auto-Detect Entities)**:
+- Người dùng **KHÔNG CẦN sửa bất kỳ ID thực thể nào**.
+- Thẻ tự quét Home Assistant để bắt đúng PV1/PV2, Pin BMS, Lưới điện, Biến tần, Thời tiết, Điều khiển từ xa.
+
+👉 **Xem và sao chép mã thẻ tại:** [`examples/dashboard_master_card.yaml`](examples/dashboard_master_card.yaml)  
+*(Chỉ cần cài plugin `custom:button-card` từ HACS, tạo card Manual và paste vào là xong!)*
+
+---
+
 ## 🤝 Đóng góp
 
 Pull requests are welcome! Mọi thiết bị dùng mini-ems.com đều được hỗ trợ.

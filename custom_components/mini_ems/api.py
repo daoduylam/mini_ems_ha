@@ -401,13 +401,30 @@ class MiniEmsApi:
             _LOGGER.warning("Mini EMS fetch overview failed: %s", err)
             results["overview"] = {}
 
-        # 2. Raw Modbus frame — primary source for per-inverter realtime sensors
+        # 2. Inverter realtime data & Raw Modbus frame
         ov = results.get("overview", {})
         if inverter_name:
             try:
+                # 2.1 Lấy dữ liệu xử lý sẵn trực tiếp từ Cloud App (cập nhật SOC, trạng thái liên tục)
+                cloud_dev = await self.async_get_inverter_data(inverter_name) or {}
+
+                # 2.2 Lấy chi tiết thanh ghi Modbus mới nhất (để giải mã chi tiết lưới, PV, dòng điện)
                 inv = await self.async_get_latest_raw_frame(inverter_name)
                 if not inv:
                     inv = {}
+
+                # Gộp dữ liệu: Ưu tiên batterySOC từ cloud app nếu có giá trị mới nhất
+                if cloud_dev.get("batterySOC") is not None:
+                    inv["batterySOC"] = cloud_dev["batterySOC"]
+                if cloud_dev.get("batteryVoltage") is not None and not inv.get("batteryVoltage"):
+                    inv["batteryVoltage"] = cloud_dev["batteryVoltage"]
+                if cloud_dev.get("batteryPower") is not None and not inv.get("batteryPower"):
+                    inv["batteryPower"] = cloud_dev["batteryPower"]
+                if cloud_dev.get("gridPower") is not None and inv.get("gridPower") is None:
+                    inv["gridPower"] = cloud_dev["gridPower"]
+                if cloud_dev.get("loadPower") is not None and not inv.get("loadPower"):
+                    inv["loadPower"] = cloud_dev["loadPower"]
+
                 # Ensure overview fallbacks
                 if ov:
                     if not inv.get("dailyPowerGeneration"):
@@ -420,9 +437,10 @@ class MiniEmsApi:
                         inv["totalPowerGeneration"] = ov.get("totalPowerGeneration")
                 results["inverter"] = inv
                 _LOGGER.debug(
-                    "Mini EMS raw frame decoded: %d registers for %s",
+                    "Mini EMS raw frame decoded: %d registers for %s, batterySOC=%s",
                     inv.get("_reg_count", 0),
                     inverter_name,
+                    inv.get("batterySOC"),
                 )
             except Exception as err:
                 _LOGGER.warning("Mini EMS fetch raw frame failed: %s", err)
