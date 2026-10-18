@@ -192,13 +192,22 @@ class MiniEmsApi:
         )
         rows = data.get("rows", [])
 
-        # Find latest INPUT frame (dataType=04 = function code 04 = Read Input Registers)
+        # Find latest INPUT frames (dataType=04 = function code 04 = Read Input Registers)
+        # We need Frame 0 (registers 0..59, ending with '00 00 00 3C')
         input_rows = [r for r in rows if r.get("dataType") == "04"]
         if not input_rows:
             return {}
 
-        # Fetch full record with rawDataPart
-        raw_id = input_rows[0].get("rawDataId")
+        target_row = None
+        # Prefer the frame starting at register 0 (00 00 00 3C)
+        for r in input_rows:
+            if (r.get("rawData") or "").strip().endswith("00 00 00 3C"):
+                target_row = r
+                break
+        if not target_row:
+            target_row = input_rows[0]
+
+        raw_id = target_row.get("rawDataId")
         if not raw_id:
             return {}
 
@@ -220,46 +229,6 @@ class MiniEmsApi:
     def _decode_modbus_frame(raw_data_part: str) -> dict:
         """
         Decode rawDataPart hex string into sensor values.
-
-        Frame format:
-        - 16 bytes: request header
-        - N bytes: response data = 60+ registers × 2 bytes
-
-        Register map CONFIRMED by live cross-reference with overviewApp values
-        (timestamp 2026-10-18 15:57, currentPower=585W, total=2371.4kWh):
-
-          R00 = status (1=online, 0=offline)
-          R01 = PV1 voltage × 0.1V   (242.8V)
-          R02 = PV2 voltage × 0.1V   (242.0V)
-          R03 = unknown (4422 — possible PV total power × 0.1?)
-          R07 = unknown (23161 — close to total kWh × 10 but not exact)
-          R08 = inverter temperature °C  (26°C)
-          R09 = secondary temperature °C (26°C)
-          R10 = battery temperature °C   (31°C)
-          R12 = total energy × 0.1 kWh  CONFIRMED: 23714 = 2371.4 kWh ✅
-          R17 = battery SOC %            (79%)
-          R18 = battery voltage × 0.1V  (63.0V for LFP 48V battery)
-          R22 = load power W             (1090W — constant, might be rated)
-          R24 = AC output power W        CONFIRMED: 585W = currentPower ✅
-          R28 = battery current? (236 stable — might be constant value)
-          R31 = AC output power W        CONFIRMED: 585W (same as R24) ✅
-          R36 = battery-related (73, was 69 before)
-          R37 = unknown (20, constant)
-          R41 = grid frequency × 0.1Hz  CONFIRMED: 505 = 50.5Hz ✅
-          R42 = AC power duplicate       CONFIRMED: 585W ✅
-          R43 = load power W             (671W)
-          R44 = battery power signed? (105W)
-          R46 = total energy alt × 0.1?  (2133.6)
-          R48 = total energy alt2?       (3851 — stable)
-          R50 = unknown (5376)
-          R51 = grid power signed (×0.1?) (-1287 signed)
-          R52 = grid current signed      (-691 signed → -6.91A)
-          R53 = grid voltage × 0.1V     CONFIRMED: 2304 = 230.4V ✅
-          R54 = rated power? (5002 ≈ 5000W)
-          R55 = grid frequency × 0.1Hz  (491 = 49.1Hz — might be load freq)
-          R56 = AC current × 0.01A      (337 = 3.37A → 3.37A × 230V ≈ 775W ~ok)
-          R58 = unknown (30, constant)
-          R59 = unknown (92)
         """
         try:
             hex_bytes = [int(b, 16) for b in raw_data_part.strip().split()]
@@ -283,61 +252,46 @@ class MiniEmsApi:
         def signed16(val: int) -> int:
             return val - 65536 if val > 32767 else val
 
+        ac_p = reg(24) or reg(31) or reg(42)
+
         result: dict = {
             # ── Status ──────────────────────────────────────────────────
             "raw_status": reg(0, 0),
             "online": reg(0, 0) == 1,
 
             # ── PV Input ────────────────────────────────────────────────
-            # R01/R02 confirmed as ~242V (PV string voltage afternoon)
             "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1) else None,
             "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2) else None,
 
             # ── Temperature ─────────────────────────────────────────────
-            # R08=26°C (inverter), R09=26°C, R10=31°C (battery)
             "temperature": reg(8),
             "batteryTemperature": reg(10),
 
             # ── Energy ──────────────────────────────────────────────────
-            # R12 CONFIRMED: × 0.1 = totalPowerGeneration kWh
             "totalPowerGeneration": round(reg(12, 0) * 0.1, 2) if reg(12) else None,
-            # Daily energy NOT found in INPUT registers → from overview
             "dailyPowerGeneration": None,
 
             # ── Battery ─────────────────────────────────────────────────
-            # R17=SOC%, R18=voltage×0.1
-            "batterySOC": reg(17),
+            "batterySOC": reg(17) or reg(19),
             "batteryVoltage": round(reg(18, 0) * 0.1, 1) if reg(18) else None,
-
-            # Battery power: R44 signed (small values ~100W charging)
             "batteryPower": signed16(reg(44, 0)) if reg(44) is not None else None,
 
             # ── AC Output ───────────────────────────────────────────────
-            # R24 CONFIRMED = currentPower W
-            "acPower": reg(24),
+            "acPower": ac_p,
+            "inverterPower": ac_p,
 
             # ── Load ────────────────────────────────────────────────────
-            # R43 = 671W (load power — changes with consumption)
             "loadPower": reg(43),
 
             # ── Grid ────────────────────────────────────────────────────
-            # R53 CONFIRMED × 0.1 = 230.4V
             "gridVoltage": round(reg(53, 0) * 0.1, 1) if reg(53) else None,
-            # R41 CONFIRMED × 0.1 = 50.5Hz
             "gridFrequency": round(reg(41, 0) * 0.1, 2) if reg(41) else None,
-            # R51 signed = grid power (negative = export)
             "gridPower": signed16(reg(51, 0)) if reg(51) is not None else None,
-            # R52 signed × 0.01 = grid current A
             "gridCurrent": round(signed16(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None,
-            # R56 × 0.01 = AC output current A
             "acCurrent": round(reg(56, 0) * 0.01, 2) if reg(56) else None,
 
             # ── Metadata ────────────────────────────────────────────────
             "_reg_count": len(registers),
-            "_raw_r03": reg(3),   # 4422 — PV total power × 0.1?
-            "_raw_r22": reg(22),  # 1090 — constant, possibly rated load
-            "_raw_r28": reg(28),  # 236 — constant value
-            "_raw_r50": reg(50),  # 5376
         }
 
         return result
@@ -414,14 +368,22 @@ class MiniEmsApi:
             results["overview"] = {}
 
         # 2. Raw Modbus frame — primary source for per-inverter realtime sensors
+        ov = results.get("overview", {})
         if inverter_name:
             try:
                 inv = await self.async_get_latest_raw_frame(inverter_name)
-                # Fill in daily energy from overview (not available in INPUT registers)
-                ov = results.get("overview", {})
-                if inv and ov:
-                    inv.setdefault("dailyPowerGeneration", ov.get("dailyPowerGeneration"))
-                    inv.setdefault("acPower", ov.get("currentPower"))
+                if not inv:
+                    inv = {}
+                # Ensure overview fallbacks
+                if ov:
+                    if not inv.get("dailyPowerGeneration"):
+                        inv["dailyPowerGeneration"] = ov.get("dailyPowerGeneration")
+                    if not inv.get("acPower"):
+                        inv["acPower"] = ov.get("currentPower")
+                    if not inv.get("inverterPower"):
+                        inv["inverterPower"] = inv.get("acPower") or ov.get("currentPower")
+                    if not inv.get("totalPowerGeneration") and ov.get("totalPowerGeneration"):
+                        inv["totalPowerGeneration"] = ov.get("totalPowerGeneration")
                 results["inverter"] = inv
                 _LOGGER.debug(
                     "Mini EMS raw frame decoded: %d registers for %s",
@@ -430,9 +392,19 @@ class MiniEmsApi:
                 )
             except Exception as err:
                 _LOGGER.warning("Mini EMS fetch raw frame failed: %s", err)
-                results["inverter"] = {}
+                results["inverter"] = {
+                    "acPower": ov.get("currentPower"),
+                    "inverterPower": ov.get("currentPower"),
+                    "dailyPowerGeneration": ov.get("dailyPowerGeneration"),
+                    "totalPowerGeneration": ov.get("totalPowerGeneration"),
+                }
         else:
-            results["inverter"] = {}
+            results["inverter"] = {
+                "acPower": ov.get("currentPower"),
+                "inverterPower": ov.get("currentPower"),
+                "dailyPowerGeneration": ov.get("dailyPowerGeneration"),
+                "totalPowerGeneration": ov.get("totalPowerGeneration"),
+            }
 
         # 3. Station electricity (hourly kWh breakdown)
         try:

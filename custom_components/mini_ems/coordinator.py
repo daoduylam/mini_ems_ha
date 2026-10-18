@@ -30,7 +30,12 @@ class MiniEmsCoordinator(DataUpdateCoordinator):
         """Initialize coordinator."""
         self.entry = entry
         # Use inverter_name (serial number) to identify the device
-        self.inverter_name: str | None = entry.data.get("inverter_name")
+        inv_name = entry.data.get("inverter_name") or ""
+        if not inv_name:
+            title = entry.title or ""
+            if " - " in title:
+                inv_name = title.split(" - ")[-1].strip()
+        self.inverter_name: str = inv_name.strip()
 
         session = async_get_clientsession(hass, verify_ssl=False)
         self.api = MiniEmsApi(
