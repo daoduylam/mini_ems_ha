@@ -2,8 +2,8 @@
 ### Tích hợp đầy đủ cho Donnergy / Absaar Inverter (mini-ems.com)
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/duylamstore/mini_ems_ha.svg)](https://github.com/duylamstore/mini_ems_ha/releases)
-[![License](https://img.shields.io/github/license/duylamstore/mini_ems_ha.svg)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/daoduylam/mini_ems_ha.svg)](https://github.com/daoduylam/mini_ems_ha/releases)
+[![License](https://img.shields.io/github/license/daoduylam/mini_ems_ha.svg)](LICENSE)
 
 Tích hợp này kết nối **Home Assistant** với đám mây **mini-ems.com** để lấy toàn bộ dữ liệu biến tần Donnergy/Absaar theo thời gian thực — nhiều hơn gấp 3-4 lần so với integration Absaar mặc định.
 
@@ -24,7 +24,7 @@ Tích hợp này kết nối **Home Assistant** với đám mây **mini-ems.com*
 
 ### Bước 1: Thêm Custom Repository
 1. Mở HACS → **Integrations** → ⋮ → **Custom repositories**
-2. Thêm URL: `https://github.com/duylamstore/mini_ems_ha`
+2. Thêm URL: `https://github.com/daoduylam/mini_ems_ha`
 3. Category: **Integration**
 
 ### Bước 2: Cài đặt
@@ -46,7 +46,7 @@ Tích hợp này kết nối **Home Assistant** với đám mây **mini-ems.com*
 # SSH vào Home Assistant
 mkdir -p /config/custom_components
 cd /tmp
-wget https://github.com/duylamstore/mini_ems_ha/archive/refs/heads/main.zip
+wget https://github.com/daoduylam/mini_ems_ha/archive/refs/heads/main.zip
 unzip main.zip
 cp -r mini_ems_ha-main/custom_components/mini_ems /config/custom_components/
 # Restart HA

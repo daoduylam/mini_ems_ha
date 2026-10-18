@@ -3,11 +3,11 @@
   "name": "Mini EMS - Donnergy Inverter",
   "version": "1.0.0",
   "min_homeassistant_version": "2024.1.0",
-  "documentation": "https://mini-ems.com",
-  "issue_tracker": "",
+  "documentation": "https://github.com/daoduylam/mini_ems_ha",
+  "issue_tracker": "https://github.com/daoduylam/mini_ems_ha/issues",
   "requirements": [],
   "dependencies": [],
-  "codeowners": [],
+  "codeowners": ["@daoduylam"],
   "iot_class": "cloud_polling",
   "config_flow": true
 }
