@@ -169,6 +169,34 @@ class MiniEmsApi:
                 return dev
         return None
 
+    async def async_get_inverter_cloud_live(self, inverter_name: str) -> dict:
+        """
+        Get canonical real-time cloud data from /dn/power/inverter/list.
+        Finds the plant powerId via /dn/power/collector/list first.
+        """
+        try:
+            col_res = await self._post(
+                "/dn/power/collector/list",
+                body={"inverterName": inverter_name},
+                params={"pageNum": 1, "pageSize": 10},
+            )
+            rows = col_res.get("rows", [])
+            if not rows:
+                return {}
+            power_id = rows[0].get("powerId")
+            if not power_id:
+                return {}
+            inv_res = await self._post("/dn/power/inverter/list", body={"powerId": power_id})
+            target = (inverter_name or "").strip().lower()
+            for inv in inv_res.get("rows", []):
+                name = str(inv.get("inverterName") or "").strip().lower()
+                if name == target:
+                    return inv
+            return inv_res.get("rows", [{}])[0]
+        except Exception as err:
+            _LOGGER.debug("Fetch cloud live inverter list failed: %s", err)
+            return {}
+
     # ─────────────────────────────────────────────────────────────────────────
     # Station Electricity (daily/monthly kWh breakdown)
     # ─────────────────────────────────────────────────────────────────────────
@@ -456,49 +484,66 @@ class MiniEmsApi:
         ov = results.get("overview", {})
         if inverter_name:
             try:
-                # 2.1 Lấy dữ liệu xử lý sẵn trực tiếp từ Cloud App (cập nhật SOC, trạng thái liên tục)
-                cloud_dev = await self.async_get_inverter_data(inverter_name) or {}
+                # 2.1 Lấy dữ liệu xử lý trực tiếp từ Web/App Cloud (/dn/power/inverter/list)
+                cloud_dev = await self.async_get_inverter_cloud_live(inverter_name) or {}
 
-                # 2.2 Lấy chi tiết thanh ghi Modbus mới nhất (để giải mã chi tiết lưới, PV, dòng điện)
+                # 2.2 Lấy chi tiết thanh ghi Modbus mới nhất (cho điện áp, tần số, nhiệt độ phần cứng)
                 inv = await self.async_get_latest_raw_frame(inverter_name)
                 if not inv:
                     inv = {}
 
-                # Gộp dữ liệu: Trích xuất mọi trường SOC từ cloud app
-                soc_val = (
-                    cloud_dev.get("batterySOC")
-                    if cloud_dev.get("batterySOC") is not None
-                    else (
-                        cloud_dev.get("soc")
-                        if cloud_dev.get("soc") is not None
-                        else (
-                            cloud_dev.get("bmsSoc")
-                            if cloud_dev.get("bmsSoc") is not None
-                            else cloud_dev.get("batterySoc")
-                        )
-                    )
-                )
+                # Gộp dữ liệu chuẩn từ Web/App Cloud:
+                # 1. Dung lượng pin (SOC %)
+                soc_val = cloud_dev.get("capacityPercentage")
                 if soc_val is not None:
                     try:
                         inv["batterySOC"] = int(float(soc_val))
                     except (ValueError, TypeError):
                         pass
 
-                if cloud_dev.get("batteryVoltage") is not None:
-                    inv["batteryVoltage"] = cloud_dev["batteryVoltage"]
-                if cloud_dev.get("batteryPower") is not None and not inv.get("batteryPower"):
-                    inv["batteryPower"] = cloud_dev["batteryPower"]
-                if cloud_dev.get("gridPower") is not None and inv.get("gridPower") is None:
-                    inv["gridPower"] = cloud_dev["gridPower"]
-                if cloud_dev.get("loadPower") is not None and not inv.get("loadPower"):
-                    inv["loadPower"] = cloud_dev["loadPower"]
+                # 2. Công suất tải nhà và pin từ Cloud
+                cloud_load = cloud_dev.get("loadPower")
+                if cloud_load is not None:
+                    inv["loadPower"] = cloud_load
 
-                # Ensure overview fallbacks
+                cloud_bat_p = cloud_dev.get("batteryPower")
+                cloud_pv_p = cloud_dev.get("totalPower")
+                if cloud_pv_p is not None:
+                    inv["pvTotalPower"] = cloud_pv_p
+                    if cloud_pv_p == 0:
+                        inv["pv1Power"] = 0
+                        inv["pv2Power"] = 0
+
+                if cloud_bat_p is not None:
+                    # Nếu ban đêm (PV < 10W) và pin đang cấp điện, pin mang dấu âm (xả)
+                    if (cloud_pv_p or 0) < 10 and cloud_bat_p > 0:
+                        inv["batteryPower"] = -abs(cloud_bat_p)
+                    elif (cloud_pv_p or 0) > (cloud_load or 0) and cloud_bat_p > 0:
+                        inv["batteryPower"] = abs(cloud_bat_p)
+                    else:
+                        inv["batteryPower"] = -abs(cloud_bat_p) if cloud_bat_p > 0 else 0
+
+                # 3. Điện lưới: nếu pin đang gánh trọn tải nhà (hoặc hôm nay không mua điện lưới), gridPower = 0!
+                bat_discharging = abs(inv.get("batteryPower") or 0)
+                load_val = inv.get("loadPower") or 0
+                if cloud_dev.get("gridEnergyInToday") == 0.0 or (bat_discharging >= (load_val - 25) and (inv.get("pvTotalPower") or 0) < 10):
+                    inv["gridPower"] = 0
+                    inv["gridCurrent"] = 0.0
+                elif cloud_dev.get("gridPower") is not None:
+                    inv["gridPower"] = cloud_dev["gridPower"]
+
+                # 4. Sản lượng ngày / tổng
+                if cloud_dev.get("powerGenerationOfTheDay") is not None:
+                    inv["dailyPowerGeneration"] = cloud_dev["powerGenerationOfTheDay"]
+                if cloud_dev.get("totalElectricity") is not None:
+                    inv["totalPowerGeneration"] = cloud_dev["totalElectricity"]
+
+                # Overview fallbacks
                 if ov:
                     if not inv.get("dailyPowerGeneration"):
                         inv["dailyPowerGeneration"] = ov.get("dailyPowerGeneration")
                     if not inv.get("acPower"):
-                        inv["acPower"] = ov.get("currentPower")
+                        inv["acPower"] = inv.get("loadPower") or ov.get("currentPower")
                     if not inv.get("inverterPower"):
                         inv["inverterPower"] = inv.get("acPower") or ov.get("currentPower")
                     if not inv.get("totalPowerGeneration") and ov.get("totalPowerGeneration"):

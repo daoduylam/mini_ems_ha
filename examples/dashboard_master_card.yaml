@@ -54,10 +54,6 @@ triggers_update:
   - number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power
   - number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current
   - number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current
-  # Local Port 15444 & BMS phòng bếp fallback (nếu có)
-  - sensor.absaar_local_port_15444_pv1_power
-  - sensor.absaar_local_port_15444_pv2_power
-  - sensor.absaar_local_port_15444_pv_total_power
   - sensor.phong_bep_pin_luu_tru_delta_cell_voltage
   - sensor.phong_bep_pin_luu_tru_cycles
   - sensor.phong_bep_pin_luu_tru_stored_energy
@@ -193,52 +189,56 @@ custom_fields:
         var pv1_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage', 0));
         var pv2_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage', 0));
 
-        // Công suất PV1 & PV2
-        var pv1_w = Math.round(getFirstValid(['sensor.absaar_local_port_15444_pv1_power', 'sensor.mini_ems_dbc2511007_pv1_power'], (pv1_v > 50 ? Math.round(pv1_v * 1.5) : 0)));
-        var pv2_w = Math.round(getFirstValid(['sensor.absaar_local_port_15444_pv2_power', 'sensor.mini_ems_dbc2511007_pv2_power'], (pv2_v > 50 ? Math.round(pv2_v * 1.5) : 0)));
-        var pvTotal = Math.max(pv1_w + pv2_w, Math.round(getFirstValid(['sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', 'sensor.absaar_local_port_15444_pv_total_power'], 0)));
+        // Công suất PV1 & PV2 (Chỉ lấy từ sensor.mini_ems_dbc2511007)
+        var pv1_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pv1_power', 0));
+        var pv2_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pv2_power', 0));
+        var pvTotal = Math.round(getNum('sensor.mini_ems_dbc2511007_tong_cong_suat_pv_pv_total_power', 0));
+        if (pvTotal <= 0) {
+          pvTotal = pv1_w + pv2_w;
+        }
+        if (isNight) {
+          pv1_w = 0;
+          pv2_w = 0;
+          pvTotal = 0;
+        }
 
         var pv1_a = pv1_v > 10 ? (pv1_w / pv1_v).toFixed(1) : "0.0";
         var pv2_a = pv2_v > 10 ? (pv2_w / pv2_v).toFixed(1) : "0.0";
 
         // Pin lưu trữ (Battery)
-        var bat_soc = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', 20));
-        var bat_v = getNum('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', 51.2).toFixed(1);
+        var bat_soc = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', 69));
+        var bat_v = getNum('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', 52.8).toFixed(1);
         var bat_a = getNum('sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa', 0).toFixed(1);
         var bat_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa', 0));
-        var bat_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', 28));
+        var bat_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', 25));
 
         var bat_cycles = getStr('sensor.phong_bep_pin_luu_tru_cycles', '131');
         var bat_delta = getStr('sensor.phong_bep_pin_luu_tru_delta_cell_voltage', '0.004');
-        var bat_energy_wh = getNum('sensor.phong_bep_pin_luu_tru_stored_energy', 2150);
+        var bat_energy_wh = getNum('sensor.phong_bep_pin_luu_tru_stored_energy', Math.round(10200 * (bat_soc / 100)));
         var bat_remain_kwh = (bat_energy_wh / 1000).toFixed(1);
         var bat_total_kwh = 10.2;
 
         // Biến tần & Lưới điện
-        var inv_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp', 35));
+        var inv_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp', 25));
         var inv_curr = getNum('sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current', 0).toFixed(1);
         var grid_v = Math.round(getNum('sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage', 230));
         var grid_hz = Math.round(getNum('sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency', 50));
         var grid_p = Math.round(getNum('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', 0)); // +mua, -bán
 
         // Công suất AC & Tải tiêu thụ
-        var ac_p = Math.round(getNum('sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power', 0));
         var load_p = Math.round(getNum('sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power', 0));
+        var ac_p = Math.round(getNum('sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power', load_p));
 
         // Phân loại sạc / xả pin
         var batChargeW = bat_w > 5 ? bat_w : 0;
         var batDischargeW = bat_w < -5 ? Math.abs(bat_w) : 0;
 
-        // Phân loại lưới điện EVN
+        // Phân loại lưới điện EVN (Chuẩn 100% theo sensor, không cộng suy đoán)
         var gridImport = grid_p > 5 ? grid_p : 0;
         var gridExport = grid_p < -5 ? Math.abs(grid_p) : 0;
-        if (grid_p === 0) {
-          if (pvTotal > ac_p + 50) gridExport = Math.round(pvTotal - ac_p);
-          else if (ac_p > pvTotal + 50 && batDischargeW <= 5) gridImport = Math.round(ac_p - pvTotal);
-        }
 
-        var actualHouseLoad = load_p > 0 ? load_p : (ac_p > 0 ? ac_p : 280);
-        var invSelfLoss = Math.min(85, Math.max(25, Math.round(25 + Math.max(pvTotal, batChargeW) * 0.05)));
+        var actualHouseLoad = load_p > 0 ? load_p : (batDischargeW > 0 ? batDischargeW : (ac_p > 0 ? ac_p : 0));
+        var invSelfLoss = Math.min(85, Math.max(15, Math.round(15 + Math.max(pvTotal, batDischargeW) * 0.05)));
 
         // Trạng thái hệ thống
         var systemStatusEntity = getStr('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', '');
