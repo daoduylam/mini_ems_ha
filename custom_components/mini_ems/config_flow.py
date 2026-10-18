@@ -46,7 +46,70 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Handle the initial step - login."""
+        """Choose between Cloud (Mini-EMS) and Local (Port 15444)."""
+        if user_input is not None:
+            mode = user_input.get("mode")
+            if mode == "local":
+                return await self.async_step_local()
+            return await self.async_step_cloud()
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("mode", default="cloud"): SelectSelector(
+                        SelectSelectorConfig(
+                            options=[
+                                {"value": "cloud", "label": "Cloud (Tài khoản mini-ems.com)"},
+                                {"value": "local", "label": "Local (Trực tiếp Port 15444 - Không cần Cloud)"},
+                            ],
+                            mode=SelectSelectorMode.LIST,
+                        )
+                    )
+                }
+            ),
+        )
+
+    async def async_step_local(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Configure local mode."""
+        if user_input is not None:
+            serial = user_input.get("serial", "").strip() or "DBC2511007"
+            return self.async_create_entry(
+                title=f"Absaar/MiniEMS Local ({serial})",
+                data={
+                    "connection_type": "local",
+                    "serial": serial,
+                    "port": user_input.get("port", 15444),
+                    "poll_delay": user_input.get("poll_delay", 5),
+                },
+            )
+
+        return self.async_show_form(
+            step_id="local",
+            data_schema=vol.Schema(
+                {
+                    vol.Required("port", default=15444): NumberSelector(
+                        NumberSelectorConfig(min=1024, max=65535, mode=NumberSelectorMode.BOX)
+                    ),
+                    vol.Optional("serial", default="DBC2511007"): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.TEXT)
+                    ),
+                    vol.Required("poll_delay", default=5): NumberSelector(
+                        NumberSelectorConfig(min=1, max=60, unit_of_measurement="giây", mode=NumberSelectorMode.BOX)
+                    ),
+                }
+            ),
+            description_placeholders={
+                "hint": "Cấu hình cổng lắng nghe kết nối từ cục Wi-Fi logger (Mặc định Port 15444)",
+            },
+        )
+
+    async def async_step_cloud(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Handle Cloud login step."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
@@ -59,6 +122,7 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
             try:
                 login_result = await api.async_login()
                 self._login_data = {
+                    "connection_type": "cloud",
                     CONF_USERNAME: user_input[CONF_USERNAME],
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                     "user_id": str(login_result.get("userId", "")),
@@ -85,7 +149,6 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
                 if self._inverter_list:
                     return await self.async_step_select_inverter()
 
-                # Không tìm thấy thiết bị → cho nhập thủ công
                 errors["base"] = "no_devices"
 
             except MiniEmsAuthError:
@@ -94,7 +157,7 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
                 errors["base"] = "cannot_connect"
 
         return self.async_show_form(
-            step_id="user",
+            step_id="cloud",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_USERNAME): TextSelector(
@@ -103,7 +166,7 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PASSWORD): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
                     ),
-                    vol.Optional("inverter_serial", default=""): TextSelector(
+                    vol.Optional("inverter_serial", default="DBC2511007"): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.TEXT)
                     ),
                 }
@@ -111,7 +174,6 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
             errors=errors,
             description_placeholders={
                 "url": "https://mini-ems.com",
-                "serial_hint": "Nhập serial number biến tần (VD: DBC2511007) hoặc để trống để chọn từ danh sách",
             },
         )
 

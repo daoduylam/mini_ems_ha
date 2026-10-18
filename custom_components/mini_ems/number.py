@@ -22,7 +22,11 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Mini EMS number entities."""
-    coordinator: MiniEmsCoordinator = hass.data[DOMAIN][entry.entry_id]
+    stored = hass.data[DOMAIN][entry.entry_id]
+    if "hub" in stored:
+        return
+
+    coordinator: MiniEmsCoordinator = stored.get("coordinator") or stored
     async_add_entities([
         MiniEmsBatteryMinSocNumber(coordinator, entry),
         MiniEmsBatteryMaxSocNumber(coordinator, entry),

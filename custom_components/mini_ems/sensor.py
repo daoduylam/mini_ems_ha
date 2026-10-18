@@ -391,13 +391,90 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Mini EMS sensor entities."""
-    coordinator: MiniEmsCoordinator = hass.data[DOMAIN][entry.entry_id]
+    stored = hass.data[DOMAIN][entry.entry_id]
 
+    if "hub" in stored:
+        # Local Mode entities
+        hub = stored["hub"]
+        local_sensors = [
+            ("pv1_voltage", "PV1 Điện áp (PV1 Voltage)", "V", SensorDeviceClass.VOLTAGE),
+            ("pv2_voltage", "PV2 Điện áp (PV2 Voltage)", "V", SensorDeviceClass.VOLTAGE),
+            ("pv1_current", "PV1 Dòng điện (PV1 Current)", "A", SensorDeviceClass.CURRENT),
+            ("pv2_current", "PV2 Dòng điện (PV2 Current)", "A", SensorDeviceClass.CURRENT),
+            ("pv1_power", "PV1 Công suất (PV1 Power)", "W", SensorDeviceClass.POWER),
+            ("pv2_power", "PV2 Công suất (PV2 Power)", "W", SensorDeviceClass.POWER),
+            ("pv_total_power", "Tổng PV Công suất (PV Total Power)", "W", SensorDeviceClass.POWER),
+            ("ac_voltage", "Điện áp lưới (AC Voltage)", "V", SensorDeviceClass.VOLTAGE),
+            ("ac_frequency", "Tần số lưới (AC Frequency)", "Hz", SensorDeviceClass.FREQUENCY),
+            ("ac_power", "Công suất phát AC (AC Power)", "W", SensorDeviceClass.POWER),
+            ("total_energy", "Tổng sản lượng biến tần (Total Energy)", "kWh", SensorDeviceClass.ENERGY),
+        ]
+        entities = [
+            MiniEmsLocalSensor(hub, key, name, unit, dev_class, entry)
+            for key, name, unit, dev_class in local_sensors
+        ]
+        async_add_entities(entities, update_before_add=True)
+        return
+
+    # Cloud Mode entities
+    coordinator: MiniEmsCoordinator = stored.get("coordinator") or stored
     entities = []
     for description in ALL_SENSORS:
         entities.append(MiniEmsSensor(coordinator, description, entry))
 
     async_add_entities(entities, update_before_add=True)
+
+
+class MiniEmsLocalSensor(SensorEntity):
+    """Local TCP Socket Sensor directly connected to inverter datalogger."""
+
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        hub,
+        key: str,
+        name: str,
+        unit: str,
+        device_class: SensorDeviceClass,
+        entry: ConfigEntry,
+    ) -> None:
+        self._hub = hub
+        self._key = key
+        self._attr_name = name
+        self._attr_native_unit_of_measurement = unit
+        self._attr_device_class = device_class
+        if device_class in (SensorDeviceClass.POWER, SensorDeviceClass.VOLTAGE, SensorDeviceClass.CURRENT, SensorDeviceClass.FREQUENCY):
+            self._attr_state_class = SensorStateClass.MEASUREMENT
+        elif device_class == SensorDeviceClass.ENERGY:
+            self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+        serial = entry.data.get("serial", entry.data.get("inverter_name", "local"))
+        self._attr_unique_id = f"mini_ems_local_{entry.entry_id}_{key}"
+        self._attr_device_info = {
+            "identifiers": {(DOMAIN, f"local_{entry.entry_id}")},
+            "name": f"Absaar Local - {serial}",
+            "manufacturer": "Absaar / Donnergy",
+            "model": "Inverter Local TCP (Port 15444)",
+        }
+
+    async def async_added_to_hass(self) -> None:
+        """Register update dispatcher."""
+        from homeassistant.helpers.dispatcher import async_dispatcher_connect
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, self._hub.signal, self._handle_update)
+        )
+
+    def _handle_update(self) -> None:
+        self.async_write_ha_state()
+
+    @property
+    def native_value(self) -> Any:
+        return self._hub.data.get(self._key)
+
+    @property
+    def available(self) -> bool:
+        return self._hub.online
 
 
 class MiniEmsSensor(CoordinatorEntity[MiniEmsCoordinator], SensorEntity):
@@ -483,11 +560,11 @@ class MiniEmsSensor(CoordinatorEntity[MiniEmsCoordinator], SensorEntity):
         attrs: dict[str, Any] = {}
 
         if self.entity_description.source == "inverter":
-            # Add inverter metadata
+            # Add inverter metadata and packet debug logs
             for field in [
                 "inverterId", "powerId", "inverterName", "collectorName",
                 "equipmentModel", "firmware", "upgradeStatus", "deviceType",
-                "powerName",
+                "powerName", "_reg_count", "_raw_frame_id", "_raw_time", "_raw_data",
             ]:
                 if field in inv:
                     attrs[field] = inv[field]
