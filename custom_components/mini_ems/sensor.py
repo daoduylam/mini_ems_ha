@@ -176,6 +176,36 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         data_key="pv2Voltage",
         icon="mdi:solar-panel-large",
     ),
+    MiniEmsSensorDescription(
+        key="pv1_power",
+        name="PV1 Công suất (PV1 Power)",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="pv1Power",
+        icon="mdi:solar-power",
+    ),
+    MiniEmsSensorDescription(
+        key="pv2_power",
+        name="PV2 Công suất (PV2 Power)",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="pv2Power",
+        icon="mdi:solar-power",
+    ),
+    MiniEmsSensorDescription(
+        key="pv_total_power",
+        name="Tổng công suất PV (PV Total Power)",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="pvTotalPower",
+        icon="mdi:solar-power-variant",
+    ),
     # ── AC Output ────────────────────────────────────────────────────────────
     MiniEmsSensorDescription(
         key="ac_power",
@@ -237,6 +267,16 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         source="inverter",
         data_key="gridPower",
         icon="mdi:transmission-tower",
+    ),
+    MiniEmsSensorDescription(
+        key="grid_current",
+        name="Dòng điện lưới (Grid Current)",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="gridCurrent",
+        icon="mdi:current-ac",
     ),
     # ── Battery ─────────────────────────────────────────────────────────────
     MiniEmsSensorDescription(

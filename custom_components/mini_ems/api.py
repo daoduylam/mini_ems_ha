@@ -167,7 +167,7 @@ class MiniEmsApi:
             name = str(dev.get("inverterName") or dev.get("sn") or "").strip().lower()
             if name == target:
                 return dev
-        return rows[0] if rows else None
+        return None
 
     # ─────────────────────────────────────────────────────────────────────────
     # Station Electricity (daily/monthly kWh breakdown)
@@ -196,15 +196,21 @@ class MiniEmsApi:
         rows = data.get("rows", [])
 
         # Find latest INPUT frames (dataType=04 = function code 04 = Read Input Registers)
-        # We need Frame 0 (registers 0..59, ending with '00 00 00 3C')
+        # Sắp xếp các gói tin theo thời gian tạo mới nhất lên đầu
         input_rows = [r for r in rows if r.get("dataType") == "04"]
         if not input_rows:
             return {}
 
+        input_rows.sort(
+            key=lambda x: str(x.get("createTime") or x.get("time") or x.get("rawDataId") or ""),
+            reverse=True,
+        )
+
         target_row = None
-        # Prefer the frame starting at register 0 (00 00 00 3C)
+        # Ưu tiên gói tin bắt đầu từ thanh ghi 0 (kết thúc bằng 00 00 00 3C)
         for r in input_rows:
-            if (r.get("rawData") or "").strip().endswith("00 00 00 3C"):
+            raw_hex = (r.get("rawData") or "").strip()
+            if raw_hex.endswith("00 00 00 3C") or "04 00 00 00 3C" in raw_hex:
                 target_row = r
                 break
         if not target_row:
@@ -255,17 +261,39 @@ class MiniEmsApi:
         def signed16(val: int) -> int:
             return val - 65536 if val > 32767 else val
 
-        ac_p = reg(24) or reg(31) or reg(42)
+        ac_p = reg(24) or reg(31) or reg(42) or 0
 
-        # PV total power
-        pv_v1 = round(reg(1, 0) * 0.1, 1) if reg(1) else 0.0
-        pv_v2 = round(reg(2, 0) * 0.1, 1) if reg(2) else 0.0
+        # PV total power and voltage
+        # Inverter registers: R1 = PV1 voltage (0.1V), R2 = PV2 voltage (0.1V)
+        # Residual floating voltage < 10V at night is clamped to 0.0V
+        raw_pv1_v = reg(1, 0)
+        raw_pv2_v = reg(2, 0)
+        pv_v1 = round(raw_pv1_v * 0.1, 1) if raw_pv1_v and raw_pv1_v >= 100 else 0.0
+        pv_v2 = round(raw_pv2_v * 0.1, 1) if raw_pv2_v and raw_pv2_v >= 100 else 0.0
         is_daytime = (pv_v1 > 50.0 or pv_v2 > 50.0)
 
         # ── Battery ─────────────────────────────────────────────────
-        batt_soc = reg(17) or reg(19)
-        batt_volt = round(reg(18, 0) * 0.1, 1) if reg(18) else None
-        if not batt_volt and batt_soc:
+        # Battery SOC:
+        # R59 is the REAL BMS dynamic Battery SOC (0-100%) confirmed by cloud app and telemetry
+        # R17 / R19 are internal inverter static/limit registers
+        batt_soc = None
+        if reg(59) is not None and 0 <= reg(59) <= 100:
+            batt_soc = reg(59)
+        elif reg(17) is not None and 0 <= reg(17) <= 100:
+            batt_soc = reg(17)
+        elif reg(19) is not None and 0 <= reg(19) <= 100:
+            batt_soc = reg(19)
+
+        # Battery Voltage:
+        # R50 is the REAL Battery Voltage (0.01V, e.g. 5286 -> 52.86V for 51.2V LiFePO4)
+        batt_volt = None
+        if reg(50) and reg(50) > 1000:
+            batt_volt = round(reg(50) * 0.01, 1)
+        elif reg(50) and reg(50) > 100:
+            batt_volt = round(reg(50) * 0.1, 1)
+        elif reg(18) and reg(18) > 100:
+            batt_volt = round(reg(18) * 0.1, 1)
+        elif batt_soc:
             batt_volt = round(48.0 + (batt_soc / 100.0) * 5.2, 1)
 
         # Battery Power calculation:
@@ -290,17 +318,37 @@ class MiniEmsApi:
         if load_p is None:
             load_p = ac_p
 
+        # ── Grid (Lưới điện) ────────────────────────────────────────
+        # R53 = Grid Voltage (0.1V, e.g. 2298 -> 229.8V)
+        # R54 = Grid Frequency (0.01Hz, e.g. 4999 -> 49.99Hz)
+        # R51 = Grid Power (signed 16-bit: +import from EVN / -export to EVN)
+        # R52 = Grid Current (0.01A)
+        # R56 = AC Current (0.01A)
+        grid_v = round(reg(53, 0) * 0.1, 1) if reg(53) else None
+        grid_f = round(reg(54, 0) * 0.01, 2) if reg(54) else None
+        grid_p = signed16(reg(51, 0)) if reg(51) is not None else None
+        grid_c = round(signed16(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None
+        ac_c = round(reg(56, 0) * 0.01, 2) if reg(56) else (round(ac_p / 230.0, 2) if ac_p else 0.0)
+
+        # ── PV Powers ───────────────────────────────────────────────
+        pv1_p = 0 if not is_daytime else None
+        pv2_p = 0 if not is_daytime else None
+        pv_tot_p = 0 if not is_daytime else None
+
         result: dict = {
             # ── Status ──────────────────────────────────────────────────
             "raw_status": reg(0, 0),
             "online": reg(0, 0) == 1,
 
             # ── PV Input ────────────────────────────────────────────────
-            "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1) else 0.0,
-            "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2) else 0.0,
+            "pv1Voltage": pv_v1,
+            "pv2Voltage": pv_v2,
+            "pv1Power": pv1_p,
+            "pv2Power": pv2_p,
+            "pvTotalPower": pv_tot_p,
 
             # ── Temperature ─────────────────────────────────────────────
-            "temperature": reg(8),
+            "temperature": reg(8) or reg(10),
             "batteryTemperature": reg(10),
 
             # ── Energy ──────────────────────────────────────────────────
@@ -321,11 +369,11 @@ class MiniEmsApi:
             "loadPower": load_p,
 
             # ── Grid (Lưới điện) ────────────────────────────────────────
-            "gridVoltage": round(reg(53, 0) * 0.1, 1) if reg(53) else None,
-            "gridFrequency": round(reg(41, 0) * 0.1, 2) if reg(41) else None,
-            "gridPower": signed16(reg(51, 0)) if reg(51) is not None else None,
-            "gridCurrent": round(signed16(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None,
-            "acCurrent": round(reg(56, 0) * 0.01, 2) if reg(56) else None,
+            "gridVoltage": grid_v,
+            "gridFrequency": grid_f,
+            "gridPower": grid_p,
+            "gridCurrent": grid_c,
+            "acCurrent": ac_c,
 
             # ── Raw Packet Metadata ─────────────────────────────────────
             "_reg_count": len(registers),
