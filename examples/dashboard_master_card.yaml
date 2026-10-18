@@ -1,0 +1,763 @@
+# ==============================================================================
+# BẢNG ĐIỀU KHIỂN ĐIỆN MẶT TRỜI HYBRID MINI-EMS / DONNERGY (MASTER CARD)
+# Thiết kế chuẩn 100% theo ID thực thể chính thức của bộ tích hợp Mini EMS
+# Serial: DBC2511007
+# ==============================================================================
+
+type: custom:button-card
+entity: sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power
+show_name: false
+show_icon: false
+triggers_update:
+  - sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation
+  - sensor.mini_ems_dbc2511007_tong_san_luong_total_generation
+  - sensor.mini_ems_dbc2511007_cong_suat_dinh_muc_rated_power
+  - sensor.mini_ems_dbc2511007_thu_nhap_hom_nay_daily_income
+  - sensor.mini_ems_dbc2511007_tong_thu_nhap_cumulative_income
+  - sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal
+  - sensor.mini_ems_dbc2511007_giam_phat_thai_co2
+  - sensor.mini_ems_dbc2511007_cay_xanh_bao_ve
+  - sensor.mini_ems_dbc2511007_so_luong_bien_tan
+  - sensor.mini_ems_dbc2511007_bien_tan_dang_online
+  - sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage
+  - sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage
+  - sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power
+  - sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current
+  - sensor.mini_ems_dbc2511007_bien_tan_cong_suat_inverter_power
+  - sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage
+  - sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency
+  - sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban
+  - sensor.mini_ems_dbc2511007_pin_soc_battery_soc
+  - sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage
+  - sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa
+  - sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa
+  - sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp
+  - sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power
+  - sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp
+  - sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh
+  - sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh
+  - sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status
+  - sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption
+  - sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power
+  - binary_sensor.mini_ems_dbc2511007_bien_tan_online
+  - binary_sensor.mini_ems_dbc2511007_dang_sac_pin
+  - binary_sensor.mini_ems_dbc2511007_dang_xa_pin
+  - binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien
+  - binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi
+  - binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi
+  - select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode
+  - select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode
+  - number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc
+  - number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc
+  - switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export
+  - switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge
+  - number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power
+  - number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current
+  - number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current
+  # Local Port 15444 & BMS phòng bếp fallback (nếu có)
+  - sensor.absaar_local_port_15444_pv1_power
+  - sensor.absaar_local_port_15444_pv2_power
+  - sensor.absaar_local_port_15444_pv_total_power
+  - sensor.phong_bep_pin_luu_tru_delta_cell_voltage
+  - sensor.phong_bep_pin_luu_tru_cycles
+  - sensor.phong_bep_pin_luu_tru_stored_energy
+  - sun.sun
+  - weather.forecast_home
+  - weather.home
+styles:
+  card:
+    - background: linear-gradient(135deg, rgba(8, 14, 26, 0.95) 0%, rgba(4, 8, 16, 0.98) 100%)
+    - backdrop-filter: blur(20px)
+    - -webkit-backdrop-filter: blur(20px)
+    - border: 1px solid rgba(255, 255, 255, 0.08)
+    - border-radius: 24px
+    - box-shadow: 0 25px 60px -10px rgba(0, 0, 0, 0.85)
+    - width: 100%
+    - padding: 12px 10px 24px 10px
+    - box-sizing: border-box
+    - color: '#fff'
+custom_fields:
+  master_dashboard: |
+    [[[
+      try {
+        // ==========================================
+        // 0. HÀM ĐỌC GIÁ TRỊ AN TOÀN
+        // ==========================================
+        function getNum(entityId, defVal = 0) {
+          if (!states[entityId] || states[entityId].state === 'unavailable' || states[entityId].state === 'unknown') {
+            return defVal;
+          }
+          var val = parseFloat(states[entityId].state);
+          return isNaN(val) ? defVal : val;
+        }
+
+        function getFirstValid(entityList, defVal = 0) {
+          for (var i = 0; i < entityList.length; i++) {
+            var id = entityList[i];
+            if (states[id] && states[id].state !== 'unavailable' && states[id].state !== 'unknown') {
+              var v = parseFloat(states[id].state);
+              if (!isNaN(v) && v > 0) return v;
+            }
+          }
+          for (var i = 0; i < entityList.length; i++) {
+            var id = entityList[i];
+            if (states[id] && states[id].state !== 'unavailable' && states[id].state !== 'unknown') {
+              var v = parseFloat(states[id].state);
+              if (!isNaN(v)) return v;
+            }
+          }
+          return defVal;
+        }
+
+        function getStr(entityId, defVal = "") {
+          if (!states[entityId] || states[entityId].state === 'unavailable' || states[entityId].state === 'unknown') {
+            return defVal;
+          }
+          return states[entityId].state;
+        }
+
+        function formatVND(n) {
+          return Math.round(n || 0).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        // ==========================================
+        // 1. THỜI TIẾT & BỨC XẠ
+        // ==========================================
+        var sunObj = states['sun.sun'];
+        var sunElev = sunObj && sunObj.attributes ? Math.round(sunObj.attributes.elevation || 0) : 0;
+        var sunIsAbove = sunObj ? (sunObj.state === 'above_horizon') : true;
+
+        var sunriseTime = "05:50";
+        var sunsetTime = "17:45";
+        if (sunObj && sunObj.attributes) {
+          if (sunObj.attributes.next_rising) {
+            var rD = new Date(sunObj.attributes.next_rising);
+            sunriseTime = ("0" + rD.getHours()).slice(-2) + ":" + ("0" + rD.getMinutes()).slice(-2);
+          }
+          if (sunObj.attributes.next_setting) {
+            var sD = new Date(sunObj.attributes.next_setting);
+            sunsetTime = ("0" + sD.getHours()).slice(-2) + ":" + ("0" + sD.getMinutes()).slice(-2);
+          }
+        }
+
+        var weatherObj = states['weather.forecast_home'] || states['weather.home'] || null;
+        if (!weatherObj) {
+          for (var wKey in states) {
+            if (wKey.startsWith('weather.')) {
+              weatherObj = states[wKey];
+              break;
+            }
+          }
+        }
+
+        var weatherState = weatherObj ? weatherObj.state : 'sunny';
+        var rawTemp = weatherObj && weatherObj.attributes && weatherObj.attributes.temperature !== undefined ? parseFloat(weatherObj.attributes.temperature) : 28;
+        var tempUnit = (weatherObj && weatherObj.attributes && weatherObj.attributes.temperature_unit) || '°C';
+        var weatherTemp = Math.round(rawTemp);
+        if (tempUnit.includes('F') || rawTemp > 55) {
+          weatherTemp = Math.round((rawTemp - 32) * 5 / 9);
+        }
+        var weatherHumi = weatherObj && weatherObj.attributes && weatherObj.attributes.humidity ? Math.round(weatherObj.attributes.humidity) : 65;
+        var weatherWind = weatherObj && weatherObj.attributes && weatherObj.attributes.wind_speed ? Math.round(weatherObj.attributes.wind_speed) : 8;
+
+        var isNight = (!sunIsAbove || sunElev <= 0);
+        var weatherDesc = isNight ? 'Đêm quang mây' : 'Trời nắng';
+        var weatherIcon = isNight ? 'mdi:weather-night' : 'mdi:weather-sunny';
+        var weatherIconColor = isNight ? '#38bdf8' : '#fbbf24';
+
+        if (weatherState === 'sunny' || weatherState === 'clear-night') {
+          weatherDesc = isNight ? 'Đêm quang mây' : 'Trời nắng';
+          weatherIcon = isNight ? 'mdi:weather-night' : 'mdi:weather-sunny';
+          weatherIconColor = isNight ? '#38bdf8' : '#fbbf24';
+        } else if (weatherState === 'partlycloudy') {
+          weatherDesc = isNight ? 'Đêm có mây' : 'Nắng có mây';
+          weatherIcon = isNight ? 'mdi:weather-night-partly-cloudy' : 'mdi:weather-partly-cloudy';
+          weatherIconColor = isNight ? '#93c5fd' : '#fbbf24';
+        } else if (weatherState === 'cloudy' || weatherState === 'overcast') {
+          weatherDesc = isNight ? 'Đêm nhiều mây' : 'Nhiều mây';
+          weatherIcon = 'mdi:weather-cloudy';
+          weatherIconColor = '#94a3b8';
+        } else if (weatherState === 'rainy' || weatherState === 'pouring') {
+          weatherDesc = weatherState === 'pouring' ? 'Mưa to' : 'Có mưa';
+          weatherIcon = 'mdi:weather-rainy';
+          weatherIconColor = '#38bdf8';
+        }
+
+        var solarEval = isNight ? "Mặt trời đã lặn" : (sunElev < 20 ? "Nắng xiên thấp" : "Bức xạ cao");
+        var solarEvalColor = isNight ? "#94a3b8" : (sunElev < 20 ? "#fbbf24" : "#34d399");
+
+        // ==========================================
+        // 2. DỮ LIỆU ĐO ĐẠC MINI EMS (DBC2511007)
+        // ==========================================
+        // Điện áp PV1 & PV2
+        var pv1_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage', 0));
+        var pv2_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage', 0));
+
+        // Công suất PV1 & PV2
+        var pv1_w = Math.round(getFirstValid(['sensor.absaar_local_port_15444_pv1_power', 'sensor.mini_ems_dbc2511007_pv1_power'], (pv1_v > 50 ? Math.round(pv1_v * 1.5) : 0)));
+        var pv2_w = Math.round(getFirstValid(['sensor.absaar_local_port_15444_pv2_power', 'sensor.mini_ems_dbc2511007_pv2_power'], (pv2_v > 50 ? Math.round(pv2_v * 1.5) : 0)));
+        var pvTotal = Math.max(pv1_w + pv2_w, Math.round(getFirstValid(['sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', 'sensor.absaar_local_port_15444_pv_total_power'], 0)));
+
+        var pv1_a = pv1_v > 10 ? (pv1_w / pv1_v).toFixed(1) : "0.0";
+        var pv2_a = pv2_v > 10 ? (pv2_w / pv2_v).toFixed(1) : "0.0";
+
+        // Pin lưu trữ (Battery)
+        var bat_soc = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', 20));
+        var bat_v = getNum('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', 51.2).toFixed(1);
+        var bat_a = getNum('sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa', 0).toFixed(1);
+        var bat_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa', 0));
+        var bat_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', 28));
+
+        var bat_cycles = getStr('sensor.phong_bep_pin_luu_tru_cycles', '131');
+        var bat_delta = getStr('sensor.phong_bep_pin_luu_tru_delta_cell_voltage', '0.004');
+        var bat_energy_wh = getNum('sensor.phong_bep_pin_luu_tru_stored_energy', 2150);
+        var bat_remain_kwh = (bat_energy_wh / 1000).toFixed(1);
+        var bat_total_kwh = 10.2;
+
+        // Biến tần & Lưới điện
+        var inv_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp', 35));
+        var inv_curr = getNum('sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current', 0).toFixed(1);
+        var grid_v = Math.round(getNum('sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage', 230));
+        var grid_hz = Math.round(getNum('sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency', 50));
+        var grid_p = Math.round(getNum('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', 0)); // +mua, -bán
+
+        // Công suất AC & Tải tiêu thụ
+        var ac_p = Math.round(getNum('sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power', 0));
+        var load_p = Math.round(getNum('sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power', 0));
+
+        // Phân loại sạc / xả pin
+        var batChargeW = bat_w > 5 ? bat_w : 0;
+        var batDischargeW = bat_w < -5 ? Math.abs(bat_w) : 0;
+
+        // Phân loại lưới điện EVN
+        var gridImport = grid_p > 5 ? grid_p : 0;
+        var gridExport = grid_p < -5 ? Math.abs(grid_p) : 0;
+        if (grid_p === 0) {
+          if (pvTotal > ac_p + 50) gridExport = Math.round(pvTotal - ac_p);
+          else if (ac_p > pvTotal + 50 && batDischargeW <= 5) gridImport = Math.round(ac_p - pvTotal);
+        }
+
+        var actualHouseLoad = load_p > 0 ? load_p : (ac_p > 0 ? ac_p : 280);
+        var invSelfLoss = Math.min(85, Math.max(25, Math.round(25 + Math.max(pvTotal, batChargeW) * 0.05)));
+
+        // Trạng thái hệ thống
+        var systemStatusEntity = getStr('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', '');
+        var inverterStatus = systemStatusEntity || 'SẴN SÀNG';
+        var inverterStatusColor = '#34d399';
+        if (gridImport > 10) { inverterStatus = 'MUA ĐIỆN'; inverterStatusColor = '#34d399'; }
+        else if (gridExport > 10) { inverterStatus = 'HÒA LƯỚI'; inverterStatusColor = '#38bdf8'; }
+        else if (batChargeW > 10) { inverterStatus = 'SẠC PIN'; inverterStatusColor = '#34d399'; }
+        else if (batDischargeW > 10) { inverterStatus = 'XẢ PIN'; inverterStatusColor = '#fbbf24'; }
+        else if (pvTotal > 10) { inverterStatus = 'MẶT TRỜI'; inverterStatusColor = '#fbbf24'; }
+
+        // Tỷ lệ tự dùng
+        var selfRatio = getNum('sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption', 0);
+        if (selfRatio <= 0 && ac_p > 0) {
+          selfRatio = Math.min(100, Math.round((actualHouseLoad / ac_p) * 100));
+        }
+
+        // Sản lượng & Thu nhập thực tế
+        var daily_kwh = getFirstValid([
+          'sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation',
+          'sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh'
+        ], 0).toFixed(1);
+
+        var total_kwh = Math.round(getFirstValid([
+          'sensor.mini_ems_dbc2511007_tong_san_luong_total_generation',
+          'sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh'
+        ], 0));
+
+        var daily_income = getNum('sensor.mini_ems_dbc2511007_thu_nhap_hom_nay_daily_income', 0);
+        var total_income = getNum('sensor.mini_ems_dbc2511007_tong_thu_nhap_cumulative_income', 0);
+        if (daily_income <= 0 && parseFloat(daily_kwh) > 0) daily_income = Math.round(parseFloat(daily_kwh) * 2380 * 1.08);
+        if (total_income <= 0 && total_kwh > 0) total_income = Math.round(total_kwh * 2380 * 1.08);
+
+        // Môi trường xanh
+        var co2_saved = getNum('sensor.mini_ems_dbc2511007_giam_phat_thai_co2', Math.round(total_kwh * 0.85));
+        var coal_saved = getNum('sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal', Math.round(total_kwh * 0.35));
+        var trees_saved = getNum('sensor.mini_ems_dbc2511007_cay_xanh_bao_ve', Math.round(total_kwh * 0.05));
+
+        // Online status
+        var isOnline = states['binary_sensor.mini_ems_dbc2511007_bien_tan_online'] ? (states['binary_sensor.mini_ems_dbc2511007_bien_tan_online'].state === 'on') : true;
+
+        // Bảng điều khiển từ xa
+        var gridExportState = states['switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export'] ? (states['switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export'].state === 'on') : true;
+        var forceChargeState = states['switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge'] ? (states['switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge'].state === 'on') : false;
+        var workModeVal = getStr('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', 'Tự dùng (Self-Consumption)');
+        var chargeModeVal = getStr('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', 'Tự động (Auto)');
+        var maxExportW = getNum('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', 5000);
+        var maxChargeA = getNum('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', 50);
+        var maxDischargeA = getNum('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', 60);
+
+        // ==========================================
+        // 3. SVG VECTORS THỜI GIAN THỰC
+        // ==========================================
+        var pv1PathSvg = pv1_w > 5
+          ? `<path d="M 170 85 C 290 85, 340 230, 420 230" fill="none" stroke="url(#g-pv)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-gold)" /><circle cx="412" cy="230" r="4.5" fill="#10b981" />`
+          : `<path d="M 170 85 C 290 85, 340 230, 420 230" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
+
+        var pv2PathSvg = pv2_w > 5
+          ? `<path d="M 170 250 L 420 250" fill="none" stroke="url(#g-pv)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-gold)" /><circle cx="412" cy="250" r="4.5" fill="#10b981" />`
+          : `<path d="M 170 250 L 420 250" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
+
+        var batPathSvg = "";
+        if (batChargeW > 5) {
+          batPathSvg = `<path d="M 420 270 C 340 270, 290 415, 170 415" fill="none" stroke="url(#g-bat-in)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-green)" /><circle cx="178" cy="415" r="4.5" fill="#10b981" />`;
+        } else if (batDischargeW > 5) {
+          batPathSvg = `<path d="M 170 415 C 290 415, 340 270, 420 270" fill="none" stroke="url(#g-bat-out)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-gold)" /><circle cx="412" cy="270" r="4.5" fill="#10b981" />`;
+        } else {
+          batPathSvg = `<path d="M 170 415 C 290 415, 340 270, 420 270" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
+        }
+
+        var gridPathSvg = "";
+        if (gridImport > 5) {
+          gridPathSvg = `<path d="M 710 85 C 590 85, 540 230, 460 230" fill="none" stroke="url(#g-grid-in)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-gold)" /><circle cx="468" cy="230" r="4.5" fill="#f59e0b" filter="drop-shadow(0 0 8px #f59e0b)" />`;
+        } else if (gridExport > 5) {
+          gridPathSvg = `<path d="M 460 230 C 540 230, 590 85, 710 85" fill="none" stroke="url(#g-grid-out)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-green)" /><circle cx="702" cy="85" r="4.5" fill="#10b981" />`;
+        } else {
+          gridPathSvg = `<path d="M 710 85 C 590 85, 540 230, 460 230" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
+        }
+
+        var housePathSvg = actualHouseLoad > 5
+          ? `<path d="M 460 270 C 540 270, 590 415, 710 415" fill="none" stroke="url(#g-house)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-cyan)" /><circle cx="702" cy="415" r="5" fill="#00f2fe" filter="drop-shadow(0 0 10px #00f2fe)" />`
+          : `<path d="M 460 270 C 540 270, 590 415, 710 415" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
+
+        var displayBatW = batChargeW > 0 ? batChargeW : (batDischargeW > 0 ? -batDischargeW : 0);
+        var batTextColor = displayBatW > 0 ? '#34d399' : (displayBatW < 0 ? '#fbbf24' : '#94a3b8');
+        var gridTextColor = gridImport > 5 ? '#f59e0b' : (gridExport > 5 ? '#34d399' : '#94a3b8');
+        var gridVal = gridImport > 0 ? gridImport : gridExport;
+
+        return `
+          <style>
+            * { box-sizing: border-box; }
+            .pulse-line-fwd { stroke-dasharray: 8, 8; animation: lineMoveForward 1.2s linear infinite; }
+            @keyframes lineMoveForward { to { stroke-dashoffset: -32; } }
+            .glass-panel {
+              background: rgba(15, 23, 42, 0.85);
+              border: 1px solid rgba(255, 255, 255, 0.08);
+              border-radius: clamp(14px, 2vw, 20px);
+              padding: clamp(10px, 1.8vw, 16px);
+              box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+              width: 100%;
+              overflow: hidden;
+            }
+            .kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.5vw, 12px); margin-bottom: 12px; }
+            .middle-flex { display: flex; flex-direction: column; gap: 12px; margin-bottom: 12px; }
+            .dual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(8px, 1.5vw, 12px); margin-bottom: 12px; }
+            @media (min-width: 768px) {
+              .middle-flex { display: grid !important; grid-template-columns: 1.35fr 1fr !important; align-items: stretch !important; }
+            }
+            @media (min-width: 1024px) {
+              .kpi-grid { grid-template-columns: repeat(4, 1fr) !important; }
+            }
+          </style>
+
+          <div style="width: 100%; max-width: 100%; margin: 0 auto;">
+
+            <!-- HEADER CHÍNH -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 2px;">
+              <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="
+                  width: 42px; height: 42px; border-radius: 12px;
+                  background: linear-gradient(135deg, #10b981, #06b6d4);
+                  display: flex; align-items: center; justify-content: center;
+                  box-shadow: 0 0 18px rgba(16, 185, 129, 0.45); flex-shrink: 0;
+                ">
+                  <ha-icon icon="mdi:solar-power-variant" style="color: #fff; --mdc-icon-size: 26px;"></ha-icon>
+                </div>
+                <div>
+                  <div style="font-size: 16px; font-weight: 900; color: #fff; line-height: 1.2;">ĐIỆN MẶT TRỜI MINI EMS</div>
+                  <div style="font-size: 11px; color: #94a3b8; font-weight: 600;">DBC2511007 • Donnergy Inverter</div>
+                </div>
+              </div>
+
+              <div style="
+                font-size: 11px; font-weight: 800; padding: 6px 12px; border-radius: 16px;
+                background: ${isOnline ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)'};
+                color: ${isOnline ? '#34d399' : '#f87171'};
+                border: 1px solid ${isOnline ? 'rgba(16, 185, 129, 0.35)' : 'rgba(239, 68, 68, 0.35)'};
+                display: flex; align-items: center; gap: 6px;
+              ">
+                <span style="width: 7px; height: 7px; border-radius: 50%; background: ${isOnline ? '#34d399' : '#f87171'}; box-shadow: 0 0 8px ${isOnline ? '#34d399' : '#f87171'};"></span>
+                ${isOnline ? 'ONLINE' : 'OFFLINE'}
+              </div>
+            </div>
+
+            <!-- HÀNG 4 Ô TỔNG QUAN -->
+            <div class="kpi-grid">
+              <!-- Thời tiết -->
+              <div class="glass-panel" style="border-top: 3px solid ${isNight ? '#38bdf8' : '#fbbf24'}; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 10.5px; font-weight: 800; color: ${isNight ? '#38bdf8' : '#fbbf24'}; text-transform: uppercase;">${isNight ? 'THỜI TIẾT BAN ĐÊM' : 'THỜI TIẾT BAN NGÀY'}</span>
+                  <ha-icon icon="${weatherIcon}" style="color: ${weatherIconColor}; --mdc-icon-size: 20px;"></ha-icon>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px; margin: 8px 0 6px 0;">
+                  <div style="font-size: 26px; font-weight: 900; color: #fff; line-height: 1.1;">
+                    ${weatherTemp}<span style="font-size: 15px; color: ${isNight ? '#38bdf8' : '#fbbf24'};">°C</span>
+                  </div>
+                  <div style="font-size: 12px; font-weight: 800; color: #e2e8f0;">${weatherDesc}</div>
+                </div>
+                <div style="font-size: 10px; color: #94a3b8; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 4px 8px; display: flex; justify-content: space-between;">
+                  <span>Ẩm: <b style="color: #fff;">${weatherHumi}%</b></span>
+                  <span>Gió: <b style="color: #fff;">${weatherWind} km/h</b></span>
+                </div>
+              </div>
+
+              <!-- Bức xạ & Khung giờ -->
+              <div class="glass-panel" style="border-top: 3px solid #38bdf8; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 10.5px; font-weight: 800; color: #38bdf8; text-transform: uppercase;">BỨC XẠ & GIỜ NẮNG</span>
+                  <ha-icon icon="mdi:weather-sunset-up" style="color: #38bdf8; --mdc-icon-size: 20px;"></ha-icon>
+                </div>
+                <div style="margin: 6px 0;">
+                  <div style="font-size: 20px; font-weight: 900; color: #fff; line-height: 1.1;">
+                    ${sunElev}° <span style="font-size: 11px; color: ${solarEvalColor}; font-weight: 800;">(${solarEval})</span>
+                  </div>
+                </div>
+                <div style="font-size: 10.5px; font-weight: 800; color: #fbbf24; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 4px 8px; display: flex; justify-content: space-between; align-items: center;">
+                  <span>🌅 ${sunriseTime}</span>
+                  <span style="color: #64748b;">➔</span>
+                  <span>🌇 ${sunsetTime}</span>
+                </div>
+              </div>
+
+              <!-- Hôm nay (Daily) -->
+              <div class="glass-panel" style="border-top: 3px solid #10b981; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase;">HÔM NAY (DAILY)</span>
+                  <ha-icon icon="mdi:calendar-today" style="color: #34d399; --mdc-icon-size: 18px;"></ha-icon>
+                </div>
+                <div style="margin: 6px 0;">
+                  <div style="font-size: 24px; font-weight: 900; color: #fff; line-height: 1.1;">
+                    ${daily_kwh} <span style="font-size: 13px; color: #34d399; font-weight: 800;">kWh</span>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 900; color: #fbbf24; margin-top: 3px;">
+                    ≈ ${formatVND(daily_income)} <span style="font-size: 10.5px; color: #f59e0b;">VNĐ</span>
+                  </div>
+                </div>
+                <div style="font-size: 9.5px; color: #64748b;">Đồng bộ Cloud Mini-EMS</div>
+              </div>
+
+              <!-- Tổng lũy kế (Total) -->
+              <div class="glass-panel" style="border-top: 3px solid #f59e0b; display: flex; flex-direction: column; justify-content: space-between; min-height: 125px; padding: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; font-weight: 800; color: #fbbf24; text-transform: uppercase;">TỔNG LŨY KẾ (TOTAL)</span>
+                  <ha-icon icon="mdi:counter" style="color: #fbbf24; --mdc-icon-size: 18px;"></ha-icon>
+                </div>
+                <div style="margin: 6px 0;">
+                  <div style="font-size: 24px; font-weight: 900; color: #fff; line-height: 1.1;">
+                    ${total_kwh} <span style="font-size: 13px; color: #fbbf24; font-weight: 800;">kWh</span>
+                  </div>
+                  <div style="font-size: 13px; font-weight: 900; color: #fbbf24; margin-top: 3px;">
+                    ≈ ${formatVND(total_income)} <span style="font-size: 10.5px; color: #f59e0b;">VNĐ</span>
+                  </div>
+                </div>
+                <div style="font-size: 9.5px; color: #64748b;">Bộ đếm phần cứng biến tần</div>
+              </div>
+            </div>
+
+            <!-- KHU VỰC TRUNG TÂM -->
+            <div class="middle-flex">
+              <!-- Sơ đồ vector -->
+              <div class="glass-panel" style="padding: 12px; display: flex; flex-direction: column; justify-content: space-between;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 11px; font-weight: 800; color: #94a3b8; text-transform: uppercase;">SƠ ĐỒ TRUYỀN DẪN THỜI GIAN THỰC</span>
+                  <span style="font-size: 10px; color: #34d399; font-weight: 700;">● Tự dùng: ${selfRatio}%</span>
+                </div>
+
+                <div style="background: rgba(0,0,0,0.35); border-radius: 14px; padding: 6px; border: 1px solid rgba(255,255,255,0.05); width: 100%; overflow: hidden;">
+                  <svg viewBox="0 0 880 500" style="width: 100%; height: auto; display: block;" preserveAspectRatio="xMidYMid meet">
+                    <defs>
+                      <linearGradient id="g-pv" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" /><stop offset="70%" stop-color="#f59e0b" /><stop offset="100%" stop-color="#fbbf24" />
+                      </linearGradient>
+                      <linearGradient id="g-bat-in" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#34d399" />
+                      </linearGradient>
+                      <linearGradient id="g-bat-out" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#34d399" /><stop offset="100%" stop-color="#fbbf24" />
+                      </linearGradient>
+                      <linearGradient id="g-grid-in" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stop-color="#f59e0b" /><stop offset="100%" stop-color="#fbbf24" />
+                      </linearGradient>
+                      <linearGradient id="g-grid-out" x1="0%" y1="100%" x2="100%" y2="0%">
+                        <stop offset="0%" stop-color="#10b981" /><stop offset="100%" stop-color="#34d399" />
+                      </linearGradient>
+                      <linearGradient id="g-house" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stop-color="#f59e0b" /><stop offset="50%" stop-color="#06b6d4" /><stop offset="100%" stop-color="#00f2fe" />
+                      </linearGradient>
+                      <marker id="ar-gold" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#fbbf24" /></marker>
+                      <marker id="ar-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#10b981" /></marker>
+                      <marker id="ar-cyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 8 5 L 0 9 z" fill="#00f2fe" /></marker>
+                    </defs>
+
+                    ${pv1PathSvg}
+                    ${pv2PathSvg}
+                    ${batPathSvg}
+                    ${gridPathSvg}
+                    ${housePathSvg}
+
+                    <!-- BIẾN TẦN DONNERGY -->
+                    <g transform="translate(420, 205)">
+                      <rect x="0" y="0" width="40" height="90" rx="10" fill="#10b981" stroke="#34d399" stroke-width="2.5" filter="drop-shadow(0 0 16px rgba(16,185,129,0.6))" />
+                      <rect x="7" y="20" width="26" height="26" rx="13" fill="#ffffff" />
+                      <circle cx="20" cy="33" r="9" fill="#10b981" />
+                      <rect x="14" y="31" width="12" height="4" rx="2" fill="#ffffff" />
+                      <rect x="4" y="84" width="32" height="6" fill="#047857" />
+                      <text x="20" y="108" text-anchor="middle" fill="#38bdf8" font-size="11" font-weight="900" letter-spacing="1">DONNERGY</text>
+
+                      <!-- BADGE TRẠNG THÁI HỆ THỐNG -->
+                      <g transform="translate(20, 144)">
+                        <rect x="-60" y="-17" width="120" height="34" rx="12" fill="rgba(15,23,42,0.95)" stroke="${inverterStatusColor}" stroke-width="1.8" filter="drop-shadow(0 0 12px ${inverterStatusColor}80)" />
+                        <text x="0" y="1" text-anchor="middle" dominant-baseline="central" fill="${inverterStatusColor}" font-size="16" font-weight="900" letter-spacing="1">${inverterStatus}</text>
+                      </g>
+                    </g>
+
+                    <!-- PV1 -->
+                    <g transform="translate(110, 60)">
+                      <rect x="-40" y="-30" width="80" height="55" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.5" />
+                      <rect x="-24" y="-12" width="28" height="20" rx="4" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />
+                      <circle cx="12" cy="4" r="8" fill="#10b981" /><text x="12" y="7.5" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="900">1</text>
+                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
+                      <text x="0" y="49" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="900">${pv1_w} W</text>
+                    </g>
+
+                    <!-- PV2 -->
+                    <g transform="translate(110, 225)">
+                      <rect x="-40" y="-30" width="80" height="55" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.5" />
+                      <rect x="-24" y="-12" width="28" height="20" rx="4" fill="#0284c7" stroke="#38bdf8" stroke-width="1.2" />
+                      <circle cx="12" cy="4" r="8" fill="#10b981" /><text x="12" y="7.5" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="900">2</text>
+                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
+                      <text x="0" y="49" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="900">${pv2_w} W</text>
+                    </g>
+
+                    <!-- PIN BMS -->
+                    <g transform="translate(110, 390)">
+                      <rect x="-35" y="-32" width="70" height="58" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.5" />
+                      <rect x="-12" y="-20" width="24" height="34" rx="4" fill="none" stroke="#34d399" stroke-width="2" />
+                      <rect x="-5" y="-24" width="10" height="4" rx="1" fill="#34d399" />
+                      <rect x="-55" y="34" width="110" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(52,211,153,0.4)" stroke-width="1.2" />
+                      <text x="0" y="51" text-anchor="middle" fill="${batTextColor}" font-size="12" font-weight="900">${displayBatW > 0 ? '+' : ''}${displayBatW}W / ${bat_soc}%</text>
+                    </g>
+
+                    <!-- LƯỚI EVN -->
+                    <g transform="translate(770, 60)">
+                      <rect x="-40" y="-30" width="80" height="55" rx="14" fill="rgba(255,255,255,0.05)" stroke="${gridTextColor}" stroke-width="1.5" />
+                      <path d="M 0 -18 L -14 10 L 14 10 Z" fill="none" stroke="${gridTextColor}" stroke-width="2" />
+                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" />
+                      <text x="0" y="49" text-anchor="middle" fill="${gridTextColor}" font-size="13" font-weight="900">${gridVal} W</text>
+                    </g>
+
+                    <!-- NHÀ TIÊU THỤ -->
+                    <g transform="translate(770, 390)">
+                      <rect x="-42" y="-32" width="84" height="58" rx="14" fill="rgba(0,242,254,0.18)" stroke="#00f2fe" stroke-width="2" filter="drop-shadow(0 0 15px rgba(0,242,254,0.4))" />
+                      <path d="M 0 -18 L -18 -4 L -18 12 L 18 12 L 18 -4 Z" fill="#00f2fe" opacity="0.9" />
+                      <rect x="-55" y="34" width="110" height="30" rx="12" fill="rgba(15,23,42,0.95)" stroke="#00f2fe" stroke-width="1.5" />
+                      <text x="0" y="54" text-anchor="middle" fill="#00f2fe" font-size="16" font-weight="900">${actualHouseLoad} W</text>
+                    </g>
+                  </svg>
+                </div>
+
+                <!-- PV1 & PV2 bar -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px;">
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(16,185,129,0.25); border-radius: 10px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #34d399;">PV1: <b style="color: #fbbf24;">${pv1_w} W</b></span>
+                    <span style="font-size: 10px; color: #94a3b8;">${pv1_v}V • ${pv1_a}A</span>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(16,185,129,0.25); border-radius: 10px; padding: 6px 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <span style="font-size: 11px; font-weight: 800; color: #34d399;">PV2: <b style="color: #fbbf24;">${pv2_w} W</b></span>
+                    <span style="font-size: 10px; color: #94a3b8;">${pv2_v}V • ${pv2_a}A</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Phụ tải & Môi trường -->
+              <div style="display: flex; flex-direction: column; gap: 12px;">
+                <!-- Phụ tải -->
+                <div class="glass-panel" style="border-left: 4px solid #00f2fe; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #00f2fe; text-transform: uppercase;">PHÂN BỔ PHỤ TẢI (LOAD POWER)</span>
+                    <span style="font-size: 11px; font-weight: 800; background: rgba(0,242,254,0.15); color: #00f2fe; padding: 3px 8px; border-radius: 6px;">
+                      AC: ${ac_p} W
+                    </span>
+                  </div>
+
+                  <div style="display: grid; grid-template-columns: ${batChargeW > 5 ? '1fr 1fr 1fr' : '1fr 1fr'}; gap: 8px; margin-bottom: 10px;">
+                    <div style="background: rgba(0,242,254,0.08); border-radius: 10px; padding: 8px;">
+                      <div style="font-size: 10px; color: #94a3b8; font-weight: 700;">TẢI NHÀ DÙNG</div>
+                      <div style="font-size: 20px; font-weight: 900; color: #fff; margin-top: 2px;">${actualHouseLoad} <span style="font-size: 11px; color: #00f2fe;">W</span></div>
+                    </div>
+                    <div style="background: rgba(245,158,11,0.08); border-radius: 10px; padding: 8px;">
+                      <div style="font-size: 10px; color: #94a3b8; font-weight: 700;">NUÔI BIẾN TẦN</div>
+                      <div style="font-size: 20px; font-weight: 900; color: #fff; margin-top: 2px;">${invSelfLoss} <span style="font-size: 11px; color: #fbbf24;">W</span></div>
+                    </div>
+                    ${batChargeW > 5 ? `
+                    <div style="background: rgba(16,185,129,0.1); border-radius: 10px; padding: 8px;">
+                      <div style="font-size: 10px; color: #34d399; font-weight: 700;">SẠC VÀO PIN</div>
+                      <div style="font-size: 20px; font-weight: 900; color: #fff; margin-top: 2px;">${batChargeW} <span style="font-size: 11px; color: #34d399;">W</span></div>
+                    </div>` : ''}
+                  </div>
+
+                  <div style="font-size: 11px; display: flex; justify-content: space-between; margin-bottom: 5px;">
+                    <span style="color: #fbbf24;">☀️ PV: ${Math.min(pvTotal, actualHouseLoad)}W</span>
+                    ${batDischargeW > 5 ? `<span style="color: #10b981;">🔋 Pin xả: ${batDischargeW}W</span>` : ''}
+                    <span style="color: #f59e0b;">🌐 Lưới: ${gridImport}W</span>
+                  </div>
+                </div>
+
+                <!-- Môi trường -->
+                <div class="glass-panel" style="border-left: 4px solid #10b981; padding: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-size: 11px; font-weight: 800; color: #34d399; text-transform: uppercase;">
+                      BẢO VỆ MÔI TRƯỜNG (GREEN ENERGY)
+                    </span>
+                    <ha-icon icon="mdi:leaf" style="color: #10b981; --mdc-icon-size: 16px;"></ha-icon>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center;">
+                    <div style="padding: 6px; border-radius: 8px; background: rgba(255,255,255,0.03);">
+                      <div style="font-size: 9px; color: #94a3b8;">GIẢM PHÁT CO2</div>
+                      <div style="font-size: 14px; font-weight: 900; color: #34d399; margin-top: 2px;">${co2_saved} <span style="font-size: 9px;">kg</span></div>
+                    </div>
+                    <div style="padding: 6px; border-radius: 8px; background: rgba(255,255,255,0.03);">
+                      <div style="font-size: 9px; color: #94a3b8;">TIẾT KIỆM THAN</div>
+                      <div style="font-size: 14px; font-weight: 900; color: #fbbf24; margin-top: 2px;">${coal_saved} <span style="font-size: 9px;">kg</span></div>
+                    </div>
+                    <div style="padding: 6px; border-radius: 8px; background: rgba(255,255,255,0.03);">
+                      <div style="font-size: 9px; color: #94a3b8;">TRỒNG CÂY</div>
+                      <div style="font-size: 14px; font-weight: 900; color: #38bdf8; margin-top: 2px;">${trees_saved} <span style="font-size: 9px;">cây</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- BIẾN TẦN & PIN BMS -->
+            <div class="dual-grid" style="margin-bottom: 12px;">
+              <!-- Biến tần -->
+              <div class="glass-panel" style="border-top: 3px solid #38bdf8;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #fff;">BIẾN TẦN & LƯỚI EVN</span>
+                  <span style="font-size: 10px; font-weight: 800; color: ${inverterStatusColor}; background: rgba(255,255,255,0.05); padding: 2px 6px; border-radius: 6px;">
+                    ${inverterStatus}
+                  </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; text-align: center; margin-bottom: 8px;">
+                  <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 6px;">
+                    <div style="font-size: 9px; color: #94a3b8;">ĐIỆN ÁP LƯỚI</div>
+                    <div style="font-size: 14px; font-weight: 800; color: #fff;">${grid_v} V</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 6px;">
+                    <div style="font-size: 9px; color: #94a3b8;">TẦN SỐ LƯỚI</div>
+                    <div style="font-size: 14px; font-weight: 800; color: #fff;">${grid_hz} Hz</div>
+                  </div>
+                </div>
+                <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 6px 10px; display: flex; justify-content: space-between; font-size: 11px;">
+                  <span style="color: #94a3b8;">Dòng AC: <b style="color: #fff;">${inv_curr} A</b></span>
+                  <span style="color: #94a3b8;">Nhiệt độ BT: <b style="color: #38bdf8;">${inv_temp}°C</b></span>
+                </div>
+              </div>
+
+              <!-- Pin lưu trữ -->
+              <div class="glass-panel" style="border-top: 3px solid #34d399;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                  <span style="font-size: 12px; font-weight: 800; color: #fff;">PIN LƯU TRỮ BMS</span>
+                  <span style="font-size: 12px; font-weight: 900; color: #34d399; background: rgba(52,211,153,0.15); padding: 2px 6px; border-radius: 6px;">
+                    ${bat_soc}%
+                  </span>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; text-align: center; margin-bottom: 8px;">
+                  <div style="background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 2px;">
+                    <div style="font-size: 9px; color: #94a3b8;">ĐIỆN ÁP</div>
+                    <div style="font-size: 13px; font-weight: 800; color: #fff;">${bat_v} V</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 2px;">
+                    <div style="font-size: 9px; color: #94a3b8;">DÒNG</div>
+                    <div style="font-size: 13px; font-weight: 800; color: ${batTextColor};">${bat_a} A</div>
+                  </div>
+                  <div style="background: rgba(255,255,255,0.03); border-radius: 6px; padding: 6px 2px;">
+                    <div style="font-size: 9px; color: #94a3b8;">CÔNG SUẤT</div>
+                    <div style="font-size: 13px; font-weight: 800; color: ${batTextColor};">${displayBatW} W</div>
+                  </div>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 6px 10px; margin-bottom: 6px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 10.5px; margin-bottom: 4px;">
+                    <span style="color: #94a3b8;">Dung lượng:</span>
+                    <span><b style="color: #34d399;">${bat_remain_kwh} kWh</b> / ${bat_total_kwh} kWh</span>
+                  </div>
+                  <div style="width: 100%; height: 5px; border-radius: 3px; background: rgba(255,255,255,0.1); overflow: hidden;">
+                    <div style="width: ${bat_soc}%; background: linear-gradient(90deg, #10b981, #34d399); height: 100%;"></div>
+                  </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; padding: 0 4px;">
+                  <span>Độ lệch: <b style="color: #38bdf8;">${bat_delta} V</b></span>
+                  <span>Chu kỳ: <b style="color: #fff;">${bat_cycles}</b></span>
+                  <span>Nhiệt độ: <b style="color: #34d399;">${bat_temp}°C</b></span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BẢNG ĐIỀU KHIỂN TẬP TRUNG (MINI EMS CHUẨN) -->
+            <div class="glass-panel" style="border-top: 3px solid #06b6d4; padding: 12px; margin-bottom: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <ha-icon icon="mdi:tune-vertical" style="color: #06b6d4; --mdc-icon-size: 18px;"></ha-icon>
+                  <span style="font-size: 12px; font-weight: 800; color: #fff; text-transform: uppercase;">BẢNG ĐIỀU KHIỂN TẬP TRUNG (MINI EMS)</span>
+                </div>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 700;">Remote Control</span>
+              </div>
+
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px;">
+                <!-- Bán điện -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <ha-icon icon="mdi:transmission-tower-export" style="color: ${gridExportState ? '#10b981' : '#64748b'}; --mdc-icon-size: 18px;"></ha-icon>
+                    <span style="font-size: 11px; font-weight: 700;">Bán điện lưới</span>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 800; color: ${gridExportState ? '#34d399' : '#94a3b8'}; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;">
+                    ${gridExportState ? 'BẬT' : 'TẮT'}
+                  </span>
+                </div>
+
+                <!-- Buộc sạc -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <ha-icon icon="mdi:battery-charging-high" style="color: ${forceChargeState ? '#fbbf24' : '#64748b'}; --mdc-icon-size: 18px;"></ha-icon>
+                    <span style="font-size: 11px; font-weight: 700;">Buộc sạc lưới</span>
+                  </div>
+                  <span style="font-size: 11px; font-weight: 800; color: ${forceChargeState ? '#fbbf24' : '#94a3b8'}; background: rgba(255,255,255,0.05); padding: 2px 8px; border-radius: 6px;">
+                    ${forceChargeState ? 'BẬT' : 'TẮT'}
+                  </span>
+                </div>
+
+                <!-- Dropdown chế độ -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: #94a3b8;">Chế độ hoạt động:</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #38bdf8;">${workModeVal.split(' ')[0]}</span>
+                </div>
+
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center;">
+                  <span style="font-size: 11px; color: #94a3b8;">Chế độ sạc:</span>
+                  <span style="font-size: 11px; font-weight: 800; color: #34d399;">${chargeModeVal.split(' ')[0]}</span>
+                </div>
+              </div>
+
+              <!-- Thanh tóm tắt -->
+              <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-top: 8px; text-align: center; font-size: 10.5px;">
+                <div style="background: rgba(0,0,0,0.25); padding: 5px; border-radius: 6px;">
+                  <span style="color: #94a3b8;">Giới hạn phát:</span> <b style="color: #38bdf8;">${maxExportW} W</b>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); padding: 5px; border-radius: 6px;">
+                  <span style="color: #94a3b8;">Dòng sạc max:</span> <b style="color: #34d399;">${maxChargeA} A</b>
+                </div>
+                <div style="background: rgba(0,0,0,0.25); padding: 5px; border-radius: 6px;">
+                  <span style="color: #94a3b8;">Dòng xả max:</span> <b style="color: #fbbf24;">${maxDischargeA} A</b>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        `;
+      } catch (e) {
+        return `<div style="padding: 16px; color: #f87171;">Lỗi tải dữ liệu: ` + e.message + `</div>`;
+      }
+    ]]]
