@@ -35,10 +35,9 @@ async def async_setup_entry(
 class MiniEmsGridExportSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEntity):
     """Toggle grid export (selling power to grid)."""
 
-    def __init__(self, coordinator, entry) -> None:
+    def __init__(self, coordinator: MiniEmsCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._entry = entry
-        self._is_on = True
         inv_name = entry.data.get("inverter_name", entry.data.get("username", "inverter"))
         self._attr_unique_id = f"mini_ems_{entry.entry_id}_grid_export"
         self._attr_name = "Cho phép bán điện lưới (Grid Export)"
@@ -53,14 +52,16 @@ class MiniEmsGridExportSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEntit
 
     @property
     def is_on(self) -> bool:
-        return self._is_on
+        return self.coordinator.control_states.get("grid_export", True)
 
     async def async_turn_on(self, **kwargs) -> None:
-        self._is_on = True
+        self.coordinator.control_states["grid_export"] = True
+        self.async_write_ha_state()
         await self._send_command(1)
 
     async def async_turn_off(self, **kwargs) -> None:
-        self._is_on = False
+        self.coordinator.control_states["grid_export"] = False
+        self.async_write_ha_state()
         await self._send_command(0)
 
     async def _send_command(self, value: int) -> None:
@@ -80,10 +81,9 @@ class MiniEmsGridExportSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEntit
 class MiniEmsForceChargeSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEntity):
     """Force charge battery from grid."""
 
-    def __init__(self, coordinator, entry) -> None:
+    def __init__(self, coordinator: MiniEmsCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
         self._entry = entry
-        self._is_on = False
         inv_name = entry.data.get("inverter_name", entry.data.get("username", "inverter"))
         self._attr_unique_id = f"mini_ems_{entry.entry_id}_force_charge"
         self._attr_name = "Buộc sạc pin từ lưới (Force Charge)"
@@ -98,14 +98,16 @@ class MiniEmsForceChargeSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEnti
 
     @property
     def is_on(self) -> bool:
-        return self._is_on
+        return self.coordinator.control_states.get("force_charge", False)
 
     async def async_turn_on(self, **kwargs) -> None:
-        self._is_on = True
+        self.coordinator.control_states["force_charge"] = True
+        self.async_write_ha_state()
         await self._send_command(1)
 
     async def async_turn_off(self, **kwargs) -> None:
-        self._is_on = False
+        self.coordinator.control_states["force_charge"] = False
+        self.async_write_ha_state()
         await self._send_command(0)
 
     async def _send_command(self, value: int) -> None:

@@ -59,19 +59,13 @@ class MiniEmsWorkModeSelect(CoordinatorEntity[MiniEmsCoordinator], SelectEntity)
 
     @property
     def current_option(self) -> str | None:
-        data = self.coordinator.data or {}
-        inv = data.get("inverter", {})
-        mode = inv.get("workMode") or inv.get("deviceMode")
-        mode_map = {
-            0: "Mặt trời ưu tiên (Solar First)",
-            1: "Pin ưu tiên (Battery First)",
-            2: "Lưới ưu tiên (Grid First)",
-            3: "Tự dùng (Self-Consumption)",
-        }
-        return mode_map.get(mode, "Mặt trời ưu tiên (Solar First)")
+        return self.coordinator.control_states.get("work_mode", "Tự dùng (Self-Consumption)")
 
     async def async_select_option(self, option: str) -> None:
         """Send work mode command."""
+        self.coordinator.control_states["work_mode"] = option
+        self.async_write_ha_state()
+
         mode_map = {
             "Mặt trời ưu tiên (Solar First)": 0,
             "Pin ưu tiên (Battery First)": 1,
@@ -79,14 +73,15 @@ class MiniEmsWorkModeSelect(CoordinatorEntity[MiniEmsCoordinator], SelectEntity)
             "Tự dùng (Self-Consumption)": 3,
         }
         mode_val = mode_map.get(option, 0)
+        inv_name = self._entry.data.get("inverter_name")
         inv_id = self._entry.data.get("inverter_id")
         try:
             await self.coordinator.api.async_send_instruction({
+                "inverterName": inv_name,
                 "inverterId": inv_id,
                 "workMode": mode_val,
                 "type": "workMode",
             })
-            await self.coordinator.async_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set work mode: %s", err)
 
@@ -116,18 +111,23 @@ class MiniEmsBatteryChargingModeSelect(CoordinatorEntity[MiniEmsCoordinator], Se
 
     @property
     def current_option(self) -> str | None:
-        return "Tự động (Auto)"
+        return self.coordinator.control_states.get("charge_mode", "Tự động (Auto)")
 
     async def async_select_option(self, option: str) -> None:
         """Send charge mode command."""
+        self.coordinator.control_states["charge_mode"] = option
+        self.async_write_ha_state()
+
         mode_map = {
             "Tự động (Auto)": 0,
             "Chỉ mặt trời (Solar Only)": 1,
             "Mặt trời + Lưới (Solar + Grid)": 2,
         }
+        inv_name = self._entry.data.get("inverter_name")
         inv_id = self._entry.data.get("inverter_id")
         try:
             await self.coordinator.api.async_send_instruction({
+                "inverterName": inv_name,
                 "inverterId": inv_id,
                 "chargeMode": mode_map.get(option, 0),
                 "type": "chargeMode",

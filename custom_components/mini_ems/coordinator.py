@@ -36,6 +36,12 @@ class MiniEmsCoordinator(DataUpdateCoordinator):
             if " - " in title:
                 inv_name = title.split(" - ")[-1].strip()
         self.inverter_name: str = inv_name.strip()
+        self.control_states: dict[str, Any] = {
+            "grid_export": True,
+            "force_charge": False,
+            "work_mode": "Tự dùng (Self-Consumption)",
+            "charge_mode": "Tự động (Auto)",
+        }
 
         session = async_get_clientsession(hass, verify_ssl=False)
         self.api = MiniEmsApi(

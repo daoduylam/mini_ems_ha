@@ -254,16 +254,28 @@ class MiniEmsApi:
 
         ac_p = reg(24) or reg(31) or reg(42)
 
+        # PV total power
+        pv_v1 = round(reg(1, 0) * 0.1, 1) if reg(1) else 0.0
+        pv_v2 = round(reg(2, 0) * 0.1, 1) if reg(2) else 0.0
+        is_daytime = (pv_v1 > 50.0 or pv_v2 > 50.0)
+
         # ── Battery ─────────────────────────────────────────────────
-        # R17=SOC%, R18=voltage×0.1 (if 0 or None, fallback to calculated from BMS or None)
         batt_soc = reg(17) or reg(19)
         batt_volt = round(reg(18, 0) * 0.1, 1) if reg(18) else None
-        # If R18 is 0 at night (standby/sleep), provide realistic battery voltage if SOC exists
         if not batt_volt and batt_soc:
             batt_volt = round(48.0 + (batt_soc / 100.0) * 5.2, 1)
 
-        # R44 is battery power (W) signed: positive = charging, negative = discharging
-        batt_power = signed16(reg(44, 0)) if reg(44) is not None else 0
+        # Battery Power calculation:
+        # At night (PV=0), if AC inverter is outputting power (ac_p > 20W), battery is DISCHARGING to feed AC:
+        if not is_daytime:
+            if ac_p and ac_p > 20:
+                batt_power = -int(ac_p / 0.95)  # Negative = Discharging (with ~95% inverter efficiency)
+            else:
+                batt_power = 0
+        else:
+            # Daytime: if R44 > 0, charging, otherwise check net flow
+            r44_val = signed16(reg(44, 0)) if reg(44) is not None else 0
+            batt_power = r44_val
 
         # Battery current (A) = Power / Voltage
         batt_curr = None
