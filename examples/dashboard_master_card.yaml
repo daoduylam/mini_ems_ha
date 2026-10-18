@@ -2,7 +2,8 @@
 # BẢNG ĐIỀU KHIỂN ĐIỆN MẶT TRỜI HYBRID MINI-EMS / DONNERGY (MASTER CARD)
 # Thiết kế chuẩn 100% theo ID thực thể chính thức của bộ tích hợp Mini EMS
 # Serial: DBC2511007
-# Tích hợp toàn bộ 50 thực thể, điều khiển 2 chiều trực tiếp mượt mà
+# HIỂN THỊ ĐẦY ĐỦ TRỰC TIẾP TOÀN BỘ 50 THỰC THỂ (KHÔNG ẨN / KHÔNG THU GỌN)
+# ĐIỀU KHIỂN 2 CHIỀU TRỰC TIẾP DẠNG NÚT BẤM CẢM ỨNG CHUYÊN NGHIỆP
 # ==============================================================================
 
 type: custom:button-card
@@ -16,7 +17,7 @@ hold_action:
 double_tap_action:
   action: none
 triggers_update:
-  # Cảm biến công suất & biến tần
+  # Toàn bộ 50 thực thể Mini EMS
   - sensor.mini_ems_dbc2511007_tong_cong_suat_pv_pv_total_power
   - sensor.mini_ems_dbc2511007_pv1_power
   - sensor.mini_ems_dbc2511007_pv2_power
@@ -33,18 +34,15 @@ triggers_update:
   - sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption
   - sensor.mini_ems_dbc2511007_so_luong_bien_tan
   - sensor.mini_ems_dbc2511007_bien_tan_dang_online
-  # Cảm biến lưới điện
   - sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage
   - sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency
   - sensor.mini_ems_dbc2511007_dong_dien_luoi_grid_current
   - sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban
-  # Cảm biến pin BMS
   - sensor.mini_ems_dbc2511007_pin_soc_battery_soc
   - sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage
   - sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa
   - sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa
   - sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp
-  # Sản lượng & Tài chính
   - sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation
   - sensor.mini_ems_dbc2511007_tong_san_luong_total_generation
   - sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh
@@ -54,7 +52,6 @@ triggers_update:
   - sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal
   - sensor.mini_ems_dbc2511007_giam_phat_thai_co2
   - sensor.mini_ems_dbc2511007_cay_xanh_bao_ve
-  # Cảm biến nhị phân
   - binary_sensor.mini_ems_dbc2511007_bien_tan_online
   - binary_sensor.mini_ems_dbc2511007_dang_sac_pin
   - binary_sensor.mini_ems_dbc2511007_dang_xa_pin
@@ -62,7 +59,6 @@ triggers_update:
   - binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi
   - binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi
   - binary_sensor.mini_ems_dbc2511007_co_ban_cap_nhat_firmware
-  # Điều khiển & Cấu hình
   - switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export
   - switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge
   - select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode
@@ -72,7 +68,6 @@ triggers_update:
   - number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current
   - number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc
   - number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc
-  # Thực thể phụ trợ
   - sensor.phong_bep_pin_luu_tru_delta_cell_voltage
   - sensor.phong_bep_pin_luu_tru_cycles
   - sensor.phong_bep_pin_luu_tru_stored_energy
@@ -81,7 +76,7 @@ triggers_update:
   - weather.home
 styles:
   card:
-    - background: linear-gradient(135deg, rgba(8, 14, 26, 0.95) 0%, rgba(4, 8, 16, 0.98) 100%)
+    - background: linear-gradient(135deg, rgba(8, 14, 26, 0.96) 0%, rgba(4, 8, 16, 0.98) 100%)
     - backdrop-filter: blur(20px)
     - -webkit-backdrop-filter: blur(20px)
     - border: 1px solid rgba(255, 255, 255, 0.08)
@@ -91,11 +86,16 @@ styles:
     - padding: 12px 10px 24px 10px
     - box-sizing: border-box
     - color: '#fff'
+    - pointer-events: auto
+    - cursor: default
+  custom_fields:
+    master_dashboard:
+      - pointer-events: auto
+      - width: 100%
 custom_fields:
   master_dashboard: |
     [[[
       try {
-        // Lưu instance hass toàn cục để phục vụ tương tác điều khiển
         if (typeof hass !== 'undefined' && hass) {
           window.__ha_hass = hass;
         }
@@ -196,14 +196,6 @@ custom_fields:
           window.miniEmsCall('homeassistant', 'toggle', { entity_id: entityId }, elem);
         };
 
-        window.miniEmsAction = function(action, entityId, elem) {
-          if (action === 'toggle') {
-            window.miniEmsToggle(entityId, elem);
-          } else if (action === 'more-info') {
-            window.miniEmsMoreInfo(entityId, elem);
-          }
-        };
-
         window.miniEmsSetSelect = function(entityId, option, elem) {
           window.miniEmsCall('select', 'select_option', { entity_id: entityId, option: option }, elem);
         };
@@ -284,35 +276,25 @@ custom_fields:
         var solarEvalColor = isNight ? "#94a3b8" : (sunElev < 20 ? "#fbbf24" : "#34d399");
 
         // ==========================================
-        // 2. DỮ LIỆU ĐO ĐẠC MINI EMS (DBC2511007)
+        // 2. DỮ LIỆU ĐO ĐẠC TOÀN BỘ 50 THỰC THỂ
         // ==========================================
-        // Điện áp PV1 & PV2
+        // PV1 & PV2
         var pv1_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage', 0));
         var pv2_v = Math.round(getNum('sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage', 0));
-
-        // Công suất PV1 & PV2 (Chỉ lấy từ sensor.mini_ems_dbc2511007)
         var pv1_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pv1_power', 0));
         var pv2_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pv2_power', 0));
         var pvTotal = Math.round(getNum('sensor.mini_ems_dbc2511007_tong_cong_suat_pv_pv_total_power', 0));
-        if (pvTotal <= 0) {
-          pvTotal = pv1_w + pv2_w;
-        }
-        if (isNight) {
-          pv1_w = 0;
-          pv2_w = 0;
-          pvTotal = 0;
-        }
-
+        if (pvTotal <= 0) pvTotal = pv1_w + pv2_w;
+        if (isNight) { pv1_w = 0; pv2_w = 0; pvTotal = 0; }
         var pv1_a = pv1_v > 10 ? (pv1_w / pv1_v).toFixed(1) : "0.0";
         var pv2_a = pv2_v > 10 ? (pv2_w / pv2_v).toFixed(1) : "0.0";
 
-        // Pin lưu trữ (Battery)
-        var bat_soc = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', 69));
+        // Pin Lithium BMS
+        var bat_soc = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', 70));
         var bat_v = getNum('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', 52.8).toFixed(1);
         var bat_a = getNum('sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa', 0).toFixed(1);
         var bat_w = Math.round(getNum('sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa', 0));
         var bat_temp = Math.round(getNum('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', 25));
-
         var bat_cycles = getStr('sensor.phong_bep_pin_luu_tru_cycles', '131');
         var bat_delta = getStr('sensor.phong_bep_pin_luu_tru_delta_cell_voltage', '0.004');
         var bat_energy_wh = getNum('sensor.phong_bep_pin_luu_tru_stored_energy', Math.round(10200 * (bat_soc / 100)));
@@ -324,9 +306,10 @@ custom_fields:
         var inv_curr = getNum('sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current', 0).toFixed(1);
         var grid_v = Math.round(getNum('sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage', 230));
         var grid_hz = Math.round(getNum('sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency', 50));
-        var grid_p = Math.round(getNum('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', 0)); // +mua, -bán
+        var grid_p = Math.round(getNum('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', 0));
         var grid_curr = getNum('sensor.mini_ems_dbc2511007_dong_dien_luoi_grid_current', 0).toFixed(1);
         var rated_power = getNum('sensor.mini_ems_dbc2511007_cong_suat_dinh_muc_rated_power', 5.0).toFixed(1);
+        var current_p = Math.round(getNum('sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', pvTotal));
 
         // Công suất AC & Tải tiêu thụ
         var load_p = Math.round(getNum('sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power', 0));
@@ -337,12 +320,10 @@ custom_fields:
         var batChargeW = bat_w > 5 ? bat_w : 0;
         var batDischargeW = bat_w < -5 ? Math.abs(bat_w) : 0;
 
-        // Phân loại lưới điện EVN (Chuẩn 100% theo sensor, không cộng suy đoán)
+        // Phân loại lưới điện EVN
         var gridImport = grid_p > 5 ? grid_p : 0;
         var gridExport = grid_p < -5 ? Math.abs(grid_p) : 0;
-
         var actualHouseLoad = load_p > 0 ? load_p : (batDischargeW > 0 ? batDischargeW : (ac_p > 0 ? ac_p : 0));
-        var invSelfLoss = Math.min(85, Math.max(15, Math.round(15 + Math.max(pvTotal, batDischargeW) * 0.05)));
 
         // Trạng thái hệ thống
         var systemStatusEntity = getStr('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', '');
@@ -360,7 +341,7 @@ custom_fields:
           selfRatio = Math.min(100, Math.round((actualHouseLoad / ac_p) * 100));
         }
 
-        // Sản lượng & Thu nhập thực tế
+        // Sản lượng & Thu nhập
         var daily_kwh = getFirstValid([
           'sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation',
           'sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh'
@@ -371,6 +352,9 @@ custom_fields:
           'sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh'
         ], 0));
 
+        var inv_daily_kwh = getNum('sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh', parseFloat(daily_kwh)).toFixed(1);
+        var inv_total_kwh = Math.round(getNum('sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh', total_kwh));
+
         var daily_income = getNum('sensor.mini_ems_dbc2511007_thu_nhap_hom_nay_daily_income', 0);
         var total_income = getNum('sensor.mini_ems_dbc2511007_tong_thu_nhap_cumulative_income', 0);
         if (daily_income <= 0 && parseFloat(daily_kwh) > 0) daily_income = Math.round(parseFloat(daily_kwh) * 2380 * 1.08);
@@ -380,9 +364,16 @@ custom_fields:
         var co2_saved = getNum('sensor.mini_ems_dbc2511007_giam_phat_thai_co2', Math.round(total_kwh * 0.85));
         var coal_saved = getNum('sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal', Math.round(total_kwh * 0.35));
         var trees_saved = getNum('sensor.mini_ems_dbc2511007_cay_xanh_bao_ve', Math.round(total_kwh * 0.05));
+        var inv_count = getNum('sensor.mini_ems_dbc2511007_so_luong_bien_tan', 1);
+        var inv_online_count = getNum('sensor.mini_ems_dbc2511007_bien_tan_dang_online', 1);
 
-        // Online & Binary status
+        // Binary sensors
         var isOnline = states['binary_sensor.mini_ems_dbc2511007_bien_tan_online'] ? (states['binary_sensor.mini_ems_dbc2511007_bien_tan_online'].state === 'on') : true;
+        var isBatCharging = states['binary_sensor.mini_ems_dbc2511007_dang_sac_pin'] ? (states['binary_sensor.mini_ems_dbc2511007_dang_sac_pin'].state === 'on') : (batChargeW > 5);
+        var isBatDischarging = states['binary_sensor.mini_ems_dbc2511007_dang_xa_pin'] ? (states['binary_sensor.mini_ems_dbc2511007_dang_xa_pin'].state === 'on') : (batDischargeW > 5);
+        var isSolarGen = states['binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien'] ? (states['binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien'].state === 'on') : (pvTotal > 10);
+        var isGridImport = states['binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi'] ? (states['binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi'].state === 'on') : (gridImport > 5);
+        var isGridExport = states['binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi'] ? (states['binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi'].state === 'on') : (gridExport > 5);
         var hasFwUpdate = states['binary_sensor.mini_ems_dbc2511007_co_ban_cap_nhat_firmware'] ? (states['binary_sensor.mini_ems_dbc2511007_co_ban_cap_nhat_firmware'].state === 'on') : false;
 
         // Bảng điều khiển từ xa
@@ -461,11 +452,11 @@ custom_fields:
               background: rgba(255,255,255,0.08);
               border: 1px solid rgba(255,255,255,0.18);
               color: #fff;
-              width: 26px;
-              height: 26px;
+              width: 28px;
+              height: 28px;
               border-radius: 6px;
               cursor: pointer;
-              font-size: 15px;
+              font-size: 16px;
               font-weight: 900;
               line-height: 1;
               display: flex;
@@ -475,25 +466,71 @@ custom_fields:
               user-select: none;
             }
             .step-btn:hover {
-              background: rgba(255,255,255,0.2);
-              border-color: rgba(255,255,255,0.35);
+              background: rgba(255,255,255,0.22);
+              border-color: rgba(255,255,255,0.4);
               transform: scale(1.05);
             }
             .step-btn:active {
               transform: scale(0.95);
             }
-            .entity-row {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              padding: 6px 8px;
-              border-bottom: 1px solid rgba(255,255,255,0.04);
+            .mode-pill {
+              flex: 1;
+              min-width: 100px;
+              padding: 7px 10px;
+              border-radius: 8px;
               font-size: 11px;
+              font-weight: 800;
+              text-align: center;
               cursor: pointer;
-              transition: background 0.15s;
-            }
-            .entity-row:hover {
+              transition: all 0.2s;
+              user-select: none;
+              border: 1px solid rgba(255,255,255,0.08);
               background: rgba(255,255,255,0.04);
+              color: #94a3b8;
+            }
+            .mode-pill:hover {
+              background: rgba(255,255,255,0.08);
+              color: #fff;
+            }
+            .mode-pill.active-blue {
+              background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+              border-color: #38bdf8;
+              color: #fff;
+              box-shadow: 0 0 10px rgba(56,189,248,0.4);
+            }
+            .mode-pill.active-green {
+              background: linear-gradient(135deg, #059669 0%, #047857 100%);
+              border-color: #34d399;
+              color: #fff;
+              box-shadow: 0 0 10px rgba(52,211,153,0.4);
+            }
+            .entity-table {
+              width: 100%;
+              border-collapse: collapse;
+              font-size: 11px;
+            }
+            .entity-table th {
+              background: rgba(255,255,255,0.05);
+              padding: 8px 10px;
+              text-align: left;
+              color: #94a3b8;
+              font-weight: 700;
+              border-bottom: 1px solid rgba(255,255,255,0.1);
+            }
+            .entity-table td {
+              padding: 7px 10px;
+              border-bottom: 1px solid rgba(255,255,255,0.04);
+              color: #cbd5e1;
+            }
+            .entity-table tr:hover td {
+              background: rgba(255,255,255,0.03);
+              cursor: pointer;
+            }
+            .val-badge {
+              font-weight: 800;
+              padding: 2px 7px;
+              border-radius: 5px;
+              display: inline-block;
             }
           </style>
 
@@ -502,11 +539,11 @@ custom_fields:
             <!-- HEADER -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div style="display: flex; align-items: center; gap: 10px;">
-                <div style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.3);">
-                  <ha-icon icon="mdi:solar-power" style="color: #fff; --mdc-icon-size: 22px;"></ha-icon>
+                <div style="background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(16,185,129,0.35);">
+                  <ha-icon icon="mdi:solar-power" style="color: #fff; --mdc-icon-size: 24px;"></ha-icon>
                 </div>
                 <div>
-                  <div style="font-size: 14px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
+                  <div style="font-size: 14.5px; font-weight: 800; letter-spacing: 0.5px; display: flex; align-items: center; gap: 6px;">
                     NHÀ CỦA LÂM
                     <span style="font-size: 9px; padding: 2px 6px; border-radius: 4px; background: rgba(16,185,129,0.2); color: #34d399; font-weight: 800;">DBC2511007</span>
                     ${hasFwUpdate ? '<span style="font-size: 8.5px; padding: 1px 5px; border-radius: 4px; background: rgba(239,68,68,0.2); color: #f87171; font-weight: 700;">UPDATE FW</span>' : ''}
@@ -817,105 +854,129 @@ custom_fields:
               </div>
             </div>
 
-            <!-- BẢNG ĐIỀU KHIỂN TẬP TRUNG (MINI EMS TRỰC TIẾP) -->
-            <div class="glass-panel" style="border-top: 3px solid #06b6d4; padding: 14px; margin-bottom: 12px;">
+            <!-- ======================================================== -->
+            <!-- BẢNG ĐIỀU KHIỂN TẬP TRUNG (INTERACTIVE REMOTE CONTROLS)    -->
+            <!-- ======================================================== -->
+            <div class="glass-panel" style="border-top: 3px solid #06b6d4; padding: 14px; margin-bottom: 14px;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <ha-icon icon="mdi:tune-vertical" style="color: #06b6d4; --mdc-icon-size: 20px;"></ha-icon>
                   <div>
-                    <span style="font-size: 12.5px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">BẢNG ĐIỀU KHIỂN TẬP TRUNG</span>
-                    <div style="font-size: 10px; color: #94a3b8;">Điều khiển tức thời 2 chiều: Công tắc, Chế độ & Giới hạn</div>
+                    <span style="font-size: 13px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">BẢNG ĐIỀU KHIỂN TẬP TRUNG (REMOTE CONTROLS)</span>
+                    <div style="font-size: 10px; color: #94a3b8;">Chạm trực tiếp để đổi chế độ, bật/tắt công tắc và chỉnh tham số</div>
                   </div>
                 </div>
-                <span style="font-size: 10px; color: #06b6d4; font-weight: 800; background: rgba(6,182,212,0.15); padding: 3px 8px; border-radius: 6px;">Live Control</span>
+                <span style="font-size: 10px; color: #06b6d4; font-weight: 800; background: rgba(6,182,212,0.15); padding: 3px 8px; border-radius: 6px;">Live 2-Way</span>
               </div>
 
-              <!-- HÀNG 1: CÔNG TẮC VÀ MENU CHỌN CHẾ ĐỘ -->
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 10px;">
+              <!-- HÀNG 1: CÔNG TẮC BẬT TẮT NHANH -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; margin-bottom: 12px;">
                 <!-- Công tắc 1: Cho phép bán điện -->
-                <div onclick="event.stopPropagation(); window.miniEmsToggle('switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export', this);"
-                     style="background: rgba(255,255,255,0.04); border: 1px solid ${gridExportState ? 'rgba(16,185,129,0.4)' : 'rgba(255,255,255,0.08)'}; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;"
-                     title="Nhấn để bật / tắt bán điện lên lưới EVN">
+                <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsToggle('switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export', this);"
+                     style="background: rgba(255,255,255,0.04); border: 1px solid ${gridExportState ? 'rgba(16,185,129,0.45)' : 'rgba(255,255,255,0.08)'}; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;"
+                     title="Chạm để BẬT / TẮT bán điện lên lưới EVN">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <ha-icon icon="mdi:transmission-tower-export" style="color: ${gridExportState ? '#10b981' : '#64748b'}; --mdc-icon-size: 22px;"></ha-icon>
                     <div>
-                      <div style="font-size: 12px; font-weight: 800; color: #fff;">Bán điện lưới</div>
-                      <div style="font-size: 10px; color: ${gridExportState ? '#10b981' : '#94a3b8'}; font-weight: 700;">${gridExportState ? 'Đang BẬT' : 'Đang TẮT'} (Chạm đổi)</div>
+                      <div style="font-size: 12px; font-weight: 800; color: #fff;">Bán điện lưới (Grid Export)</div>
+                      <div style="font-size: 10px; color: ${gridExportState ? '#10b981' : '#94a3b8'}; font-weight: 700;">${gridExportState ? 'Đang BẬT (Chạm để tắt)' : 'Đang TẮT (Chạm để bật)'}</div>
                     </div>
                   </div>
-                  <div style="width: 44px; height: 24px; border-radius: 12px; background: ${gridExportState ? '#10b981' : 'rgba(255,255,255,0.18)'}; position: relative; transition: background 0.2s;">
-                    <div style="width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: ${gridExportState ? '23px' : '3px'}; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);"></div>
+                  <div style="width: 46px; height: 26px; border-radius: 13px; background: ${gridExportState ? '#10b981' : 'rgba(255,255,255,0.18)'}; position: relative; transition: background 0.2s;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: ${gridExportState ? '23px' : '3px'}; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);"></div>
                   </div>
                 </div>
 
                 <!-- Công tắc 2: Buộc sạc lưới -->
-                <div onclick="event.stopPropagation(); window.miniEmsToggle('switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge', this);"
-                     style="background: rgba(255,255,255,0.04); border: 1px solid ${forceChargeState ? 'rgba(245,158,11,0.4)' : 'rgba(255,255,255,0.08)'}; border-radius: 12px; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;"
-                     title="Nhấn để bật / tắt buộc sạc pin từ lưới">
+                <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsToggle('switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge', this);"
+                     style="background: rgba(255,255,255,0.04); border: 1px solid ${forceChargeState ? 'rgba(245,158,11,0.45)' : 'rgba(255,255,255,0.08)'}; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s;"
+                     title="Chạm để BẬT / TẮT buộc sạc pin từ lưới EVN">
                   <div style="display: flex; align-items: center; gap: 10px;">
                     <ha-icon icon="mdi:battery-charging-high" style="color: ${forceChargeState ? '#fbbf24' : '#64748b'}; --mdc-icon-size: 22px;"></ha-icon>
                     <div>
-                      <div style="font-size: 12px; font-weight: 800; color: #fff;">Buộc sạc lưới</div>
-                      <div style="font-size: 10px; color: ${forceChargeState ? '#fbbf24' : '#94a3b8'}; font-weight: 700;">${forceChargeState ? 'Đang BẬT' : 'Đang TẮT'} (Chạm đổi)</div>
+                      <div style="font-size: 12px; font-weight: 800; color: #fff;">Buộc sạc lưới (Force Charge)</div>
+                      <div style="font-size: 10px; color: ${forceChargeState ? '#fbbf24' : '#94a3b8'}; font-weight: 700;">${forceChargeState ? 'Đang BẬT (Chạm để tắt)' : 'Đang TẮT (Chạm để bật)'}</div>
                     </div>
                   </div>
-                  <div style="width: 44px; height: 24px; border-radius: 12px; background: ${forceChargeState ? '#f59e0b' : 'rgba(255,255,255,0.18)'}; position: relative; transition: background 0.2s;">
-                    <div style="width: 18px; height: 18px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: ${forceChargeState ? '23px' : '3px'}; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);"></div>
+                  <div style="width: 46px; height: 26px; border-radius: 13px; background: ${forceChargeState ? '#f59e0b' : 'rgba(255,255,255,0.18)'}; position: relative; transition: background 0.2s;">
+                    <div style="width: 20px; height: 20px; border-radius: 50%; background: #fff; position: absolute; top: 3px; left: ${forceChargeState ? '23px' : '3px'}; transition: left 0.2s; box-shadow: 0 1px 4px rgba(0,0,0,0.5);"></div>
                   </div>
-                </div>
-
-                <!-- Menu Dropdown 1: Chế độ hoạt động -->
-                <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(56,189,248,0.25); border-radius: 12px; padding: 8px 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <ha-icon icon="mdi:tune" style="color: #38bdf8; --mdc-icon-size: 16px;"></ha-icon>
-                      <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">Chế độ hoạt động</span>
-                    </div>
-                    <ha-icon icon="mdi:cog" style="color: #64748b; --mdc-icon-size: 14px; cursor: pointer;"
-                             onclick="event.stopPropagation(); window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', this);"></ha-icon>
-                  </div>
-                  <select onchange="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', this.value, this);"
-                          onclick="event.stopPropagation();"
-                          style="background: #0f172a; color: #38bdf8; border: 1px solid rgba(56,189,248,0.4); border-radius: 8px; padding: 6px 8px; font-size: 11.5px; font-weight: 800; width: 100%; cursor: pointer; outline: none;">
-                    <option value="Tự dùng (Self-Consumption)" ${workModeVal.indexOf('Self') !== -1 || workModeVal.indexOf('Tự dùng') !== -1 ? 'selected' : ''}>Tự dùng (Self-Consumption)</option>
-                    <option value="Mặt trời ưu tiên (Solar First)" ${workModeVal.indexOf('Solar') !== -1 || workModeVal.indexOf('Mặt trời') !== -1 ? 'selected' : ''}>Mặt trời ưu tiên (Solar First)</option>
-                    <option value="Pin ưu tiên (Battery First)" ${workModeVal.indexOf('Battery') !== -1 || workModeVal.indexOf('Pin') !== -1 ? 'selected' : ''}>Pin ưu tiên (Battery First)</option>
-                    <option value="Lưới ưu tiên (Grid First)" ${workModeVal.indexOf('Grid') !== -1 || workModeVal.indexOf('Lưới') !== -1 ? 'selected' : ''}>Lưới ưu tiên (Grid First)</option>
-                  </select>
-                </div>
-
-                <!-- Menu Dropdown 2: Chế độ sạc pin -->
-                <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(52,211,153,0.25); border-radius: 12px; padding: 8px 12px;">
-                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                      <ha-icon icon="mdi:battery-charging-outline" style="color: #34d399; --mdc-icon-size: 16px;"></ha-icon>
-                      <span style="font-size: 11px; font-weight: 800; color: #94a3b8;">Chế độ sạc pin</span>
-                    </div>
-                    <ha-icon icon="mdi:cog" style="color: #64748b; --mdc-icon-size: 14px; cursor: pointer;"
-                             onclick="event.stopPropagation(); window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', this);"></ha-icon>
-                  </div>
-                  <select onchange="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', this.value, this);"
-                          onclick="event.stopPropagation();"
-                          style="background: #0f172a; color: #34d399; border: 1px solid rgba(52,211,153,0.4); border-radius: 8px; padding: 6px 8px; font-size: 11.5px; font-weight: 800; width: 100%; cursor: pointer; outline: none;">
-                    <option value="Tự động (Auto)" ${chargeModeVal.indexOf('Auto') !== -1 || chargeModeVal.indexOf('Tự động') !== -1 ? 'selected' : ''}>Tự động (Auto)</option>
-                    <option value="Chỉ mặt trời (Solar Only)" ${chargeModeVal.indexOf('Solar') !== -1 || chargeModeVal.indexOf('mặt trời') !== -1 ? 'selected' : ''}>Chỉ mặt trời (Solar Only)</option>
-                    <option value="Mặt trời + Lưới (Solar + Grid)" ${chargeModeVal.indexOf('Grid') !== -1 || chargeModeVal.indexOf('Lưới') !== -1 ? 'selected' : ''}>Mặt trời + Lưới (Solar + Grid)</option>
-                  </select>
                 </div>
               </div>
 
-              <!-- HÀNG 2: 5 THANH CHỈNH THAM SỐ SỐ HỌC (STEPPER & MORE-INFO) -->
+              <!-- HÀNG 2: CHỌN CHẾ ĐỘ HOẠT ĐỘNG (WORK MODE PILL BUTTONS) -->
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(56,189,248,0.2); border-radius: 12px; padding: 10px 12px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:tune" style="color: #38bdf8; --mdc-icon-size: 16px;"></ha-icon>
+                    <span style="font-size: 11px; font-weight: 800; color: #fff;">CHẾ ĐỘ HOẠT ĐỘNG (WORK MODE)</span>
+                  </div>
+                  <span style="font-size: 10.5px; font-weight: 800; color: #38bdf8;">Hiện tại: ${workModeVal}</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  <div class="mode-pill ${workModeVal.indexOf('Tự dùng') !== -1 || workModeVal.indexOf('Self') !== -1 ? 'active-blue' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', 'Tự dùng (Self-Consumption)', this);">
+                    🔄 Tự dùng
+                  </div>
+                  <div class="mode-pill ${workModeVal.indexOf('Mặt trời') !== -1 || workModeVal.indexOf('Solar') !== -1 ? 'active-blue' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', 'Mặt trời ưu tiên (Solar First)', this);">
+                    ☀ Mặt trời ưu tiên
+                  </div>
+                  <div class="mode-pill ${workModeVal.indexOf('Pin') !== -1 || workModeVal.indexOf('Battery') !== -1 ? 'active-blue' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', 'Pin ưu tiên (Battery First)', this);">
+                    🔋 Pin ưu tiên
+                  </div>
+                  <div class="mode-pill ${workModeVal.indexOf('Lưới') !== -1 || workModeVal.indexOf('Grid') !== -1 ? 'active-blue' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', 'Lưới ưu tiên (Grid First)', this);">
+                    ⚡ Lưới ưu tiên
+                  </div>
+                </div>
+              </div>
+
+              <!-- HÀNG 3: CHỌN CHẾ ĐỘ SẠC PIN (CHARGE MODE PILL BUTTONS) -->
+              <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(52,211,153,0.2); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:battery-charging-outline" style="color: #34d399; --mdc-icon-size: 16px;"></ha-icon>
+                    <span style="font-size: 11px; font-weight: 800; color: #fff;">CHẾ ĐỘ SẠC PIN (CHARGE MODE)</span>
+                  </div>
+                  <span style="font-size: 10.5px; font-weight: 800; color: #34d399;">Hiện tại: ${chargeModeVal}</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; gap: 6px;">
+                  <div class="mode-pill ${chargeModeVal.indexOf('Tự động') !== -1 || chargeModeVal.indexOf('Auto') !== -1 ? 'active-green' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', 'Tự động (Auto)', this);">
+                    🤖 Tự động (Auto)
+                  </div>
+                  <div class="mode-pill ${chargeModeVal.indexOf('Chỉ') !== -1 || chargeModeVal.indexOf('Solar Only') !== -1 ? 'active-green' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', 'Chỉ mặt trời (Solar Only)', this);">
+                    ☀ Chỉ sạc mặt trời
+                  </div>
+                  <div class="mode-pill ${chargeModeVal.indexOf('Grid') !== -1 || chargeModeVal.indexOf('Lưới') !== -1 ? 'active-green' : ''}"
+                       onpointerdown="event.stopPropagation();"
+                       onclick="event.stopPropagation(); window.miniEmsSetSelect('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', 'Mặt trời + Lưới (Solar + Grid)', this);">
+                    ⚡ Mặt trời + Lưới
+                  </div>
+                </div>
+              </div>
+
+              <!-- HÀNG 4: 5 THANH CHỈNH THAM SỐ SỐ HỌC (STEPPERS) -->
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px;">
                 <!-- 1. Giới hạn phát -->
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                   <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; white-space: nowrap;">Giới hạn phát</div>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px;">
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', ${maxExportW}, -100, 0, 6000, this);">-</button>
-                    <div onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', this);"
-                         style="font-size: 13px; font-weight: 900; color: #38bdf8; cursor: pointer; flex: 1;" title="Nhấn để mở thanh trượt chi tiết">
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', ${maxExportW}, -100, 0, 6000, this);">-</button>
+                    <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', this);"
+                         style="font-size: 13px; font-weight: 900; color: #38bdf8; cursor: pointer; flex: 1;" title="Chạm để mở thanh trượt chi tiết">
                       ${maxExportW}<span style="font-size: 9px; color: #94a3b8;">W</span>
                     </div>
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', ${maxExportW}, 100, 0, 6000, this);">+</button>
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', ${maxExportW}, 100, 0, 6000, this);">+</button>
                   </div>
                 </div>
 
@@ -923,12 +984,12 @@ custom_fields:
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                   <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; white-space: nowrap;">Dòng sạc max</div>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px;">
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', ${maxChargeA}, -5, 5, 100, this);">-</button>
-                    <div onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', this);"
-                         style="font-size: 13px; font-weight: 900; color: #34d399; cursor: pointer; flex: 1;" title="Nhấn để mở thanh trượt chi tiết">
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', ${maxChargeA}, -5, 5, 100, this);">-</button>
+                    <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', this);"
+                         style="font-size: 13px; font-weight: 900; color: #34d399; cursor: pointer; flex: 1;" title="Chạm để mở thanh trượt chi tiết">
                       ${maxChargeA}<span style="font-size: 9px; color: #94a3b8;">A</span>
                     </div>
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', ${maxChargeA}, 5, 5, 100, this);">+</button>
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', ${maxChargeA}, 5, 5, 100, this);">+</button>
                   </div>
                 </div>
 
@@ -936,224 +997,171 @@ custom_fields:
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                   <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; white-space: nowrap;">Dòng xả max</div>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px;">
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', ${maxDischargeA}, -5, 5, 100, this);">-</button>
-                    <div onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', this);"
-                         style="font-size: 13px; font-weight: 900; color: #fbbf24; cursor: pointer; flex: 1;" title="Nhấn để mở thanh trượt chi tiết">
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', ${maxDischargeA}, -5, 5, 100, this);">-</button>
+                    <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', this);"
+                         style="font-size: 13px; font-weight: 900; color: #fbbf24; cursor: pointer; flex: 1;" title="Chạm để mở thanh trượt chi tiết">
                       ${maxDischargeA}<span style="font-size: 9px; color: #94a3b8;">A</span>
                     </div>
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', ${maxDischargeA}, 5, 5, 100, this);">+</button>
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', ${maxDischargeA}, 5, 5, 100, this);">+</button>
                   </div>
                 </div>
 
-                <!-- 4. Pin SOC tối thiểu (Min SOC) -->
+                <!-- 4. Pin SOC tối thiểu -->
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                   <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; white-space: nowrap;">Min Battery SOC</div>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px;">
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', ${minSocVal}, -5, 5, 95, this);">-</button>
-                    <div onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', this);"
-                         style="font-size: 13px; font-weight: 900; color: #f43f5e; cursor: pointer; flex: 1;" title="Nhấn để mở thanh trượt chi tiết">
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', ${minSocVal}, -5, 5, 95, this);">-</button>
+                    <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', this);"
+                         style="font-size: 13px; font-weight: 900; color: #f43f5e; cursor: pointer; flex: 1;" title="Chạm để mở thanh trượt chi tiết">
                       ${minSocVal}<span style="font-size: 9px; color: #94a3b8;">%</span>
                     </div>
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', ${minSocVal}, 5, 5, 95, this);">+</button>
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', ${minSocVal}, 5, 5, 95, this);">+</button>
                   </div>
                 </div>
 
-                <!-- 5. Pin SOC tối đa (Max SOC) -->
+                <!-- 5. Pin SOC tối đa -->
                 <div style="background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 6px; text-align: center; display: flex; flex-direction: column; justify-content: space-between;">
                   <div style="font-size: 9.5px; color: #94a3b8; font-weight: 700; white-space: nowrap;">Max Battery SOC</div>
                   <div style="display: flex; align-items: center; justify-content: space-between; gap: 4px; margin-top: 4px;">
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', ${maxSocVal}, -5, 10, 100, this);">-</button>
-                    <div onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', this);"
-                         style="font-size: 13px; font-weight: 900; color: #10b981; cursor: pointer; flex: 1;" title="Nhấn để mở thanh trượt chi tiết">
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', ${maxSocVal}, -5, 10, 100, this);">-</button>
+                    <div onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', this);"
+                         style="font-size: 13px; font-weight: 900; color: #10b981; cursor: pointer; flex: 1;" title="Chạm để mở thanh trượt chi tiết">
                       ${maxSocVal}<span style="font-size: 9px; color: #94a3b8;">%</span>
                     </div>
-                    <button class="step-btn" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', ${maxSocVal}, 5, 10, 100, this);">+</button>
+                    <button class="step-btn" onpointerdown="event.stopPropagation();" onclick="event.stopPropagation(); window.miniEmsStepNumber('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', ${maxSocVal}, 5, 10, 100, this);">+</button>
                   </div>
                 </div>
               </div>
             </div>
 
-            <!-- DANH SÁCH CHI TIẾT TOÀN BỘ 50 THỰC THỂ CỦA BỘ TÍCH HỢP MINI EMS -->
-            <details style="background: rgba(15,23,42,0.85); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; overflow: hidden; margin-top: 12px;">
-              <summary style="padding: 12px 16px; font-size: 12px; font-weight: 800; color: #38bdf8; cursor: pointer; display: flex; justify-content: space-between; align-items: center; user-select: none; background: rgba(255,255,255,0.03);">
+            <!-- ======================================================== -->
+            <!-- HIỂN THỊ TRỰC TIẾP TOÀN BỘ 50 THỰC THỂ CỦA BỘ TÍCH HỢP     -->
+            <!-- ======================================================== -->
+            <div class="glass-panel" style="border-top: 3px solid #8b5cf6; padding: 14px; margin-bottom: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
-                  <ha-icon icon="mdi:format-list-bulleted-square" style="color: #38bdf8; --mdc-icon-size: 18px;"></ha-icon>
-                  <span>DANH SÁCH TOÀN BỘ 50 THỰC THỂ MINI EMS (TELEMETRY & ĐIỀU KHIỂN)</span>
+                  <ha-icon icon="mdi:format-list-bulleted-square" style="color: #a78bfa; --mdc-icon-size: 20px;"></ha-icon>
+                  <div>
+                    <span style="font-size: 13px; font-weight: 900; color: #fff; text-transform: uppercase; letter-spacing: 0.5px;">BẢNG CHI TIẾT TOÀN BỘ 50 THỰC THỂ MINI EMS</span>
+                    <div style="font-size: 10px; color: #94a3b8;">Dữ liệu thời gian thực đầy đủ 100% — Chạm vào dòng bất kỳ để xem biểu đồ</div>
+                  </div>
                 </div>
-                <span style="font-size: 10px; color: #94a3b8; font-weight: normal; background: rgba(255,255,255,0.08); padding: 2px 8px; border-radius: 6px;">Chạm để xem chi tiết ▼</span>
-              </summary>
-              <div style="padding: 12px; max-height: 480px; overflow-y: auto;">
+                <span style="font-size: 10px; color: #a78bfa; font-weight: 800; background: rgba(139,92,246,0.15); padding: 3px 8px; border-radius: 6px;">50 Entities</span>
+              </div>
+
+              <!-- LƯỚI 2 CỘT HIỂN THỊ TẤT CẢ 6 NHÓM DỮ LIỆU -->
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 12px;">
                 
-                <!-- Nhóm 1: Quang điện & Biến tần -->
-                <div style="font-size: 11px; font-weight: 800; color: #fbbf24; margin: 6px 0 4px 0; text-transform: uppercase;">1. Quang điện PV & Biến tần (Donnergy GH 5000TL)</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_cong_suat_pv_pv_total_power', this);">
-                  <span>Tổng công suất PV (PV Total Power)</span><b style="color: #fbbf24;">${pvTotal} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv1_power', this);">
-                  <span>PV1 Công suất (PV1 Power)</span><b style="color: #fbbf24;">${pv1_w} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage', this);">
-                  <span>PV1 Điện áp (PV1 Voltage)</span><span>${pv1_v} V</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv2_power', this);">
-                  <span>PV2 Công suất (PV2 Power)</span><b style="color: #fbbf24;">${pv2_w} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage', this);">
-                  <span>PV2 Điện áp (PV2 Voltage)</span><span>${pv2_v} V</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power', this);">
-                  <span>AC Công suất đầu ra (AC Output Power)</span><b style="color: #00f2fe;">${ac_p} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current', this);">
-                  <span>AC Dòng điện đầu ra (AC Current)</span><span>${inv_curr} A</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_bien_tan_cong_suat_inverter_power', this);">
-                  <span>Biến tần công suất (Inverter Power)</span><b style="color: #38bdf8;">${inv_power} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cong_suat_dinh_muc_rated_power', this);">
-                  <span>Công suất định mức (Rated Power)</span><span>${rated_power} kW</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', this);">
-                  <span>Công suất hiện tại (Current Power)</span><span>${getNum('sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', pvTotal)} W</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power', this);">
-                  <span>Tải tiêu thụ (Load Power)</span><b style="color: #00f2fe;">${actualHouseLoad} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp', this);">
-                  <span>Nhiệt độ biến tần (Inverter Temp)</span><b style="color: #34d399;">${inv_temp} °C</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', this);">
-                  <span>Trạng thái hệ thống (System Status)</span><b style="color: #34d399;">${inverterStatus}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption', this);">
-                  <span>Tỷ lệ tự tiêu thụ (Self Consumption)</span><b style="color: #fbbf24;">${selfRatio} %</b>
+                <!-- KHỐI 1: QUANG ĐIỆN PV & BIẾN TẦN -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px;">
+                  <div style="font-size: 11px; font-weight: 800; color: #fbbf24; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:solar-panel" style="color: #fbbf24; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>1. QUANG ĐIỆN PV & BIẾN TẦN (14 THỰC THỂ)</span>
+                  </div>
+                  <table class="entity-table">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_cong_suat_pv_pv_total_power', this);"><td>Tổng công suất PV</td><td style="text-align: right;"><span class="val-badge" style="color: #fbbf24; background: rgba(251,191,36,0.15);">${pvTotal} W</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv1_power', this);"><td>PV1 Công suất</td><td style="text-align: right;"><b style="color: #fbbf24;">${pv1_w} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv1_dien_ap_pv1_voltage', this);"><td>PV1 Điện áp</td><td style="text-align: right;">${pv1_v} V</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv2_power', this);"><td>PV2 Công suất</td><td style="text-align: right;"><b style="color: #fbbf24;">${pv2_w} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pv2_dien_ap_pv2_voltage', this);"><td>PV2 Điện áp</td><td style="text-align: right;">${pv2_v} V</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ac_cong_suat_dau_ra_ac_output_power', this);"><td>AC Công suất đầu ra</td><td style="text-align: right;"><span class="val-badge" style="color: #00f2fe; background: rgba(0,242,254,0.15);">${ac_p} W</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ac_dong_dien_dau_ra_ac_current', this);"><td>AC Dòng điện đầu ra</td><td style="text-align: right;">${inv_curr} A</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_bien_tan_cong_suat_inverter_power', this);"><td>Biến tần công suất</td><td style="text-align: right;"><b style="color: #38bdf8;">${inv_power} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cong_suat_dinh_muc_rated_power', this);"><td>Công suất định mức</td><td style="text-align: right;">${rated_power} kW</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cong_suat_hien_tai_current_power', this);"><td>Công suất hiện tại</td><td style="text-align: right;">${current_p} W</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tai_tieu_thu_load_power', this);"><td>Tải tiêu thụ nhà</td><td style="text-align: right;"><b style="color: #00f2fe;">${actualHouseLoad} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_nhiet_do_bien_tan_inverter_temp', this);"><td>Nhiệt độ biến tần</td><td style="text-align: right;"><b style="color: #34d399;">${inv_temp} °C</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', this);"><td>Trạng thái hệ thống</td><td style="text-align: right;"><b style="color: #34d399;">${inverterStatus}</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption', this);"><td>Tỷ lệ tự tiêu thụ</td><td style="text-align: right;"><b style="color: #fbbf24;">${selfRatio} %</b></td></tr>
+                  </table>
                 </div>
 
-                <!-- Nhóm 2: Lưới điện EVN -->
-                <div style="font-size: 11px; font-weight: 800; color: #38bdf8; margin: 12px 0 4px 0; text-transform: uppercase;">2. Lưới điện quốc gia (EVN Grid)</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage', this);">
-                  <span>Điện áp lưới (Grid Voltage)</span><span>${grid_v} V</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_dong_dien_luoi_grid_current', this);">
-                  <span>Dòng điện lưới (Grid Current)</span><b style="color: #38bdf8;">${grid_curr} A</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency', this);">
-                  <span>Tần số lưới (Grid Frequency)</span><span>${grid_hz} Hz</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', this);">
-                  <span>Lưới công suất (Grid Power +mua/-bán)</span><b style="color: ${gridTextColor};">${grid_p} W</b>
+                <!-- KHỐI 2: LƯỚI ĐIỆN & PIN LƯU TRỮ BMS -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px;">
+                  <!-- Lưới điện -->
+                  <div style="font-size: 11px; font-weight: 800; color: #38bdf8; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:transmission-tower" style="color: #38bdf8; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>2. LƯỚI ĐIỆN QUỐC GIA EVN (4 THỰC THỂ)</span>
+                  </div>
+                  <table class="entity-table" style="margin-bottom: 12px;">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_dien_ap_luoi_grid_voltage', this);"><td>Điện áp lưới</td><td style="text-align: right;">${grid_v} V</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_dong_dien_luoi_grid_current', this);"><td>Dòng điện lưới</td><td style="text-align: right;"><b style="color: #38bdf8;">${grid_curr} A</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tan_so_luoi_grid_frequency', this);"><td>Tần số lưới</td><td style="text-align: right;">${grid_hz} Hz</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_luoi_cong_suat_grid_power_mua_ban', this);"><td>Lưới công suất (+mua/-bán)</td><td style="text-align: right;"><span class="val-badge" style="color: ${gridTextColor}; background: rgba(255,255,255,0.08);">${grid_p} W</span></td></tr>
+                  </table>
+
+                  <!-- Pin lưu trữ -->
+                  <div style="font-size: 11px; font-weight: 800; color: #34d399; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:battery-high" style="color: #34d399; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>3. PIN LƯU TRỮ LITHIUM BMS (5 THỰC THỂ)</span>
+                  </div>
+                  <table class="entity-table">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', this);"><td>Dung lượng Pin SOC</td><td style="text-align: right;"><span class="val-badge" style="color: #34d399; background: rgba(52,211,153,0.15);">${bat_soc} %</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', this);"><td>Điện áp pin</td><td style="text-align: right;">${bat_v} V</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa', this);"><td>Dòng điện pin (+sạc/-xả)</td><td style="text-align: right;"><b style="color: ${batTextColor};">${bat_a} A</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa', this);"><td>Công suất pin (+sạc/-xả)</td><td style="text-align: right;"><b style="color: ${batTextColor};">${displayBatW} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', this);"><td>Nhiệt độ pin</td><td style="text-align: right;"><b style="color: #34d399;">${bat_temp} °C</b></td></tr>
+                  </table>
                 </div>
 
-                <!-- Nhóm 3: Pin lưu trữ BMS -->
-                <div style="font-size: 11px; font-weight: 800; color: #34d399; margin: 12px 0 4px 0; text-transform: uppercase;">3. Pin lưu trữ Lithium (BMS Battery)</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_soc_battery_soc', this);">
-                  <span>Dung lượng Pin SOC (Battery SOC)</span><b style="color: #34d399;">${bat_soc} %</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_dien_ap_battery_voltage', this);">
-                  <span>Điện áp pin (Battery Voltage)</span><span>${bat_v} V</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_dong_dien_battery_current_sac_xa', this);">
-                  <span>Dòng điện pin (+sạc/-xả)</span><b style="color: ${batTextColor};">${bat_a} A</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_pin_cong_suat_battery_power_sac_xa', this);">
-                  <span>Công suất pin (+sạc/-xả)</span><b style="color: ${batTextColor};">${displayBatW} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_nhiet_do_pin_battery_temp', this);">
-                  <span>Nhiệt độ pin (Battery Temp)</span><b style="color: #34d399;">${bat_temp} °C</b>
-                </div>
-
-                <!-- Nhóm 4: Sản lượng & Môi trường & Tài chính -->
-                <div style="font-size: 11px; font-weight: 800; color: #a78bfa; margin: 12px 0 4px 0; text-transform: uppercase;">4. Sản lượng & Tài chính & Môi trường</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation', this);">
-                  <span>Sản lượng hôm nay (Daily Generation)</span><b style="color: #10b981;">${daily_kwh} kWh</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_san_luong_total_generation', this);">
-                  <span>Tổng sản lượng (Total Generation)</span><b style="color: #06b6d4;">${total_kwh} kWh</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh', this);">
-                  <span>Sản lượng hôm nay biến tần (Daily kWh)</span><span>${getNum('sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh', daily_kwh)} kWh</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh', this);">
-                  <span>Tổng sản lượng biến tần (Total kWh)</span><span>${getNum('sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh', total_kwh)} kWh</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_thu_nhap_hom_nay_daily_income', this);">
-                  <span>Thu nhập hôm nay (Daily Income)</span><b style="color: #34d399;">${formatVND(daily_income)} đ</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_thu_nhap_cumulative_income', this);">
-                  <span>Tổng thu nhập (Cumulative Income)</span><b style="color: #38bdf8;">${formatVND(total_income)} đ</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_giam_phat_thai_co2', this);">
-                  <span>Giảm phát thải CO2</span><span>${co2_saved} kg</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal', this);">
-                  <span>Than tiêu chuẩn tiết kiệm (Save Coal)</span><span>${coal_saved} kg</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cay_xanh_bao_ve', this);">
-                  <span>Cây xanh bảo vệ (Protect Trees)</span><span>${trees_saved} cây</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_so_luong_bien_tan', this);">
-                  <span>Số lượng biến tần</span><span>${getNum('sensor.mini_ems_dbc2511007_so_luong_bien_tan', 1)}</span>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_bien_tan_dang_online', this);">
-                  <span>Biến tần đang online</span><span>${getNum('sensor.mini_ems_dbc2511007_bien_tan_dang_online', 1)}</span>
+                <!-- KHỐI 3: SẢN LƯỢNG, TÀI CHÍNH & MÔI TRƯỜNG -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px;">
+                  <div style="font-size: 11px; font-weight: 800; color: #a78bfa; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:cash-multiple" style="color: #a78bfa; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>4. SẢN LƯỢNG & TÀI CHÍNH & MÔI TRƯỜNG (11 THỰC THỂ)</span>
+                  </div>
+                  <table class="entity-table">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_san_luong_hom_nay_daily_generation', this);"><td>Sản lượng hôm nay</td><td style="text-align: right;"><b style="color: #10b981;">${daily_kwh} kWh</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_san_luong_total_generation', this);"><td>Tổng sản lượng</td><td style="text-align: right;"><b style="color: #06b6d4;">${total_kwh} kWh</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_san_luong_hom_nay_bien_tan_daily_kwh', this);"><td>Sản lượng hôm nay (Biến tần)</td><td style="text-align: right;">${inv_daily_kwh} kWh</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_san_luong_bien_tan_total_kwh', this);"><td>Tổng sản lượng (Biến tần)</td><td style="text-align: right;">${inv_total_kwh} kWh</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_thu_nhap_hom_nay_daily_income', this);"><td>Thu nhập hôm nay</td><td style="text-align: right;"><b style="color: #34d399;">${formatVND(daily_income)} đ</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_tong_thu_nhap_cumulative_income', this);"><td>Tổng thu nhập</td><td style="text-align: right;"><b style="color: #38bdf8;">${formatVND(total_income)} đ</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_giam_phat_thai_co2', this);"><td>Giảm phát thải CO2</td><td style="text-align: right;"><b style="color: #60a5fa;">${co2_saved} kg</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_than_tieu_chuan_tiet_kiem_save_coal', this);"><td>Than tiêu chuẩn tiết kiệm</td><td style="text-align: right;"><b style="color: #fbbf24;">${coal_saved} kg</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_cay_xanh_bao_ve', this);"><td>Cây xanh bảo vệ</td><td style="text-align: right;"><b style="color: #34d399;">${trees_saved} cây</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_so_luong_bien_tan', this);"><td>Số lượng biến tần</td><td style="text-align: right;">${inv_count}</td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('sensor.mini_ems_dbc2511007_bien_tan_dang_online', this);"><td>Biến tần đang online</td><td style="text-align: right;"><b style="color: #10b981;">${inv_online_count}</b></td></tr>
+                  </table>
                 </div>
 
-                <!-- Nhóm 5: Trạng thái nhị phân (Binary Sensors) -->
-                <div style="font-size: 11px; font-weight: 800; color: #f43f5e; margin: 12px 0 4px 0; text-transform: uppercase;">5. Cảm biến trạng thái nhị phân (Binary Sensors)</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_bien_tan_online', this);">
-                  <span>Biến tần online</span><b style="color: ${isOnline ? '#10b981' : '#ef4444'};">${isOnline ? 'ON (Online)' : 'OFF (Offline)'}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_sac_pin', this);">
-                  <span>Đang sạc pin (Battery Charging)</span><b>${states['binary_sensor.mini_ems_dbc2511007_dang_sac_pin'] ? states['binary_sensor.mini_ems_dbc2511007_dang_sac_pin'].state : (batChargeW > 5 ? 'on' : 'off')}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_xa_pin', this);">
-                  <span>Đang xả pin (Battery Discharging)</span><b>${states['binary_sensor.mini_ems_dbc2511007_dang_xa_pin'] ? states['binary_sensor.mini_ems_dbc2511007_dang_xa_pin'].state : (batDischargeW > 5 ? 'on' : 'off')}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien', this);">
-                  <span>Mặt trời đang phát điện</span><b>${states['binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien'] ? states['binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien'].state : (pvTotal > 10 ? 'on' : 'off')}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi', this);">
-                  <span>Đang mua điện lưới</span><b>${states['binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi'] ? states['binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi'].state : (gridImport > 5 ? 'on' : 'off')}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi', this);">
-                  <span>Đang bán điện lưới (Hòa lưới)</span><b>${states['binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi'] ? states['binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi'].state : (gridExport > 5 ? 'on' : 'off')}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_co_ban_cap_nhat_firmware', this);">
-                  <span>Có bản cập nhật firmware</span><b>${hasFwUpdate ? 'CÓ (Update available)' : 'KHÔNG'}</b>
-                </div>
+                <!-- KHỐI 4: TRẠNG THÁI NHỊ PHÂN & ĐIỀU KHIỂN CẤU HÌNH -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 10px;">
+                  <!-- Cảm biến nhị phân -->
+                  <div style="font-size: 11px; font-weight: 800; color: #f43f5e; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:checkbox-marked-circle-outline" style="color: #f43f5e; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>5. CẢM BIẾN NHỊ PHÂN (7 BINARY SENSORS)</span>
+                  </div>
+                  <table class="entity-table" style="margin-bottom: 12px;">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_bien_tan_online', this);"><td>Biến tần online</td><td style="text-align: right;"><span class="val-badge" style="color: ${isOnline ? '#10b981' : '#ef4444'}; background: ${isOnline ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'};">${isOnline ? 'ON (Online)' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_sac_pin', this);"><td>Đang sạc pin</td><td style="text-align: right;"><span class="val-badge" style="color: ${isBatCharging ? '#34d399' : '#64748b'};">${isBatCharging ? 'ON' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_xa_pin', this);"><td>Đang xả pin</td><td style="text-align: right;"><span class="val-badge" style="color: ${isBatDischarging ? '#fbbf24' : '#64748b'};">${isBatDischarging ? 'ON' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_mat_troi_dang_phat_dien', this);"><td>Mặt trời đang phát điện</td><td style="text-align: right;"><span class="val-badge" style="color: ${isSolarGen ? '#fbbf24' : '#64748b'};">${isSolarGen ? 'ON' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_mua_dien_luoi', this);"><td>Đang mua điện lưới</td><td style="text-align: right;"><span class="val-badge" style="color: ${isGridImport ? '#f59e0b' : '#64748b'};">${isGridImport ? 'ON' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_dang_ban_dien_luoi_hoa_luoi', this);"><td>Đang bán điện lưới</td><td style="text-align: right;"><span class="val-badge" style="color: ${isGridExport ? '#10b981' : '#64748b'};">${isGridExport ? 'ON' : 'OFF'}</span></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('binary_sensor.mini_ems_dbc2511007_co_ban_cap_nhat_firmware', this);"><td>Có bản cập nhật firmware</td><td style="text-align: right;"><span class="val-badge" style="color: ${hasFwUpdate ? '#f87171' : '#64748b'};">${hasFwUpdate ? 'CÓ' : 'KHÔNG'}</span></td></tr>
+                  </table>
 
-                <!-- Nhóm 6: Điều khiển cấu hình (Controls) -->
-                <div style="font-size: 11px; font-weight: 800; color: #06b6d4; margin: 12px 0 4px 0; text-transform: uppercase;">6. Điều khiển & Tham số cài đặt (Switches, Selects & Numbers)</div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export', this);">
-                  <span>Cho phép bán điện lưới (Grid Export)</span><b style="color: ${gridExportState ? '#10b981' : '#64748b'};">${gridExportState ? 'BẬT (ON)' : 'TẮT (OFF)'}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge', this);">
-                  <span>Buộc sạc pin từ lưới (Force Charge)</span><b style="color: ${forceChargeState ? '#fbbf24' : '#64748b'};">${forceChargeState ? 'BẬT (ON)' : 'TẮT (OFF)'}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', this);">
-                  <span>Chế độ hoạt động (Work Mode)</span><b style="color: #38bdf8;">${workModeVal}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', this);">
-                  <span>Chế độ sạc pin (Charge Mode)</span><b style="color: #34d399;">${chargeModeVal}</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', this);">
-                  <span>Giới hạn công suất phát lưới</span><b style="color: #38bdf8;">${maxExportW} W</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', this);">
-                  <span>Dòng sạc pin tối đa</span><b style="color: #34d399;">${maxChargeA} A</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', this);">
-                  <span>Dòng xả pin tối đa</span><b style="color: #fbbf24;">${maxDischargeA} A</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', this);">
-                  <span>Pin SOC tối thiểu (Min Battery SOC)</span><b style="color: #f43f5e;">${minSocVal} %</b>
-                </div>
-                <div class="entity-row" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', this);">
-                  <span>Pin SOC tối đa (Max Battery SOC)</span><b style="color: #10b981;">${maxSocVal} %</b>
+                  <!-- Điều khiển cấu hình -->
+                  <div style="font-size: 11px; font-weight: 800; color: #06b6d4; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                    <ha-icon icon="mdi:cog" style="color: #06b6d4; --mdc-icon-size: 16px;"></ha-icon>
+                    <span>6. THỰC THỂ ĐIỀU KHIỂN & CÀI ĐẶT (9 THỰC THỂ)</span>
+                  </div>
+                  <table class="entity-table">
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('switch.mini_ems_dbc2511007_cho_phep_ban_dien_luoi_grid_export', this);"><td>Cho phép bán điện lưới</td><td style="text-align: right;"><b style="color: ${gridExportState ? '#10b981' : '#64748b'};">${gridExportState ? 'BẬT (ON)' : 'TẮT (OFF)'}</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('switch.mini_ems_dbc2511007_buoc_sac_pin_tu_luoi_force_charge', this);"><td>Buộc sạc pin từ lưới</td><td style="text-align: right;"><b style="color: ${forceChargeState ? '#fbbf24' : '#64748b'};">${forceChargeState ? 'BẬT (ON)' : 'TẮT (OFF)'}</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_hoat_dong_work_mode', this);"><td>Chế độ hoạt động</td><td style="text-align: right;"><b style="color: #38bdf8;">${workModeVal}</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('select.mini_ems_dbc2511007_che_do_sac_pin_charge_mode', this);"><td>Chế độ sạc pin</td><td style="text-align: right;"><b style="color: #34d399;">${chargeModeVal}</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_gioi_han_cong_suat_phat_luoi_max_export_power', this);"><td>Giới hạn phát lưới</td><td style="text-align: right;"><b style="color: #38bdf8;">${maxExportW} W</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_sac_pin_toi_da_max_charge_current', this);"><td>Dòng sạc pin tối đa</td><td style="text-align: right;"><b style="color: #34d399;">${maxChargeA} A</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_dong_xa_pin_toi_da_max_discharge_current', this);"><td>Dòng xả pin tối đa</td><td style="text-align: right;"><b style="color: #fbbf24;">${maxDischargeA} A</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_thieu_min_battery_soc', this);"><td>Pin SOC tối thiểu</td><td style="text-align: right;"><b style="color: #f43f5e;">${minSocVal} %</b></td></tr>
+                    <tr onpointerdown="event.stopPropagation();" onclick="window.miniEmsMoreInfo('number.mini_ems_dbc2511007_pin_soc_toi_da_max_battery_soc', this);"><td>Pin SOC tối đa</td><td style="text-align: right;"><b style="color: #10b981;">${maxSocVal} %</b></td></tr>
+                  </table>
                 </div>
 
               </div>
-            </details>
+            </div>
 
           </div>
         `;
