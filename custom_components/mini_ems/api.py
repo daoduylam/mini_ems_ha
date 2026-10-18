@@ -176,6 +176,148 @@ class MiniEmsApi:
         return data.get("rows", [])
 
     # ─────────────────────────────────────────────────────────────────────────
+    # Raw Modbus data — source of per-inverter realtime sensor data
+    # ─────────────────────────────────────────────────────────────────────────
+
+    async def async_get_latest_raw_frame(self, inverter_name: str) -> dict:
+        """
+        Get latest RESPONSE_INV_INPUT Modbus frame for inverter.
+        Returns decoded register dict with field names.
+        """
+        # Get list of latest raw records for this inverter
+        data = await self._post(
+            "/dn/power/raw/data/list",
+            body={"inverterName": inverter_name},
+            params={"pageNum": 1, "pageSize": 20},
+        )
+        rows = data.get("rows", [])
+
+        # Find latest INPUT frame (dataType=04 = function code 04 = Read Input Registers)
+        input_rows = [r for r in rows if r.get("dataType") == "04"]
+        if not input_rows:
+            return {}
+
+        # Fetch full record with rawDataPart
+        raw_id = input_rows[0].get("rawDataId")
+        if not raw_id:
+            return {}
+
+        detail = await self._post(
+            "/dn/power/raw/data/selectDnRawDataByRawDataId",
+            body={"rawDataId": raw_id},
+        )
+        detail_rows = detail.get("rows", [])
+        if not detail_rows:
+            return {}
+
+        raw_data_part = detail_rows[0].get("rawDataPart", "")
+        if not raw_data_part:
+            return {}
+
+        return self._decode_modbus_frame(raw_data_part)
+
+    @staticmethod
+    def _decode_modbus_frame(raw_data_part: str) -> dict:
+        """
+        Decode rawDataPart hex string into sensor values.
+
+        Frame format:
+        - 16 bytes: request header (unit_id + func_code + serial + start_reg + count)
+        - 120 bytes: response data = 60 registers × 2 bytes each
+
+        Register map confirmed via cross-referencing with overviewApp live values:
+          R00 = status (1=online)
+          R01 = PV1 voltage × 0.1V
+          R02 = PV2 voltage × 0.1V
+          R08 = inverter temperature °C
+          R09 = battery temperature °C
+          R12 = total energy × 0.1 kWh  (confirmed: 23708 = 2370.8 kWh)
+          R17 = battery SOC %
+          R18 = battery voltage × 0.1V
+          R19 = battery SOC (duplicate)
+          R24 = AC output power W  (confirmed: 571W)
+          R28 = load power W
+          R31 = inverter power W
+          R33 = daily energy × 0.1 kWh
+          R52 = battery current signed × 0.01A
+          R53 = grid power signed W
+          R54 = grid voltage × 0.1V  (confirmed: 230.3V)
+          R56 = grid frequency × 0.1Hz  (confirmed: 49.9Hz)
+          R57 = AC output current × 0.01A
+        """
+        try:
+            # Parse hex bytes
+            hex_bytes = [int(b, 16) for b in raw_data_part.strip().split()]
+        except (ValueError, AttributeError):
+            return {}
+
+        if len(hex_bytes) < 32:
+            return {}
+
+        # Skip 16-byte request header, read register pairs
+        data_offset = 16
+        registers = []
+        i = data_offset
+        while i + 1 < len(hex_bytes):
+            val = (hex_bytes[i] << 8) | hex_bytes[i + 1]
+            registers.append(val)
+            i += 2
+
+        def reg(idx: int, default=None):
+            """Get register value by index."""
+            return registers[idx] if idx < len(registers) else default
+
+        def signed(val: int) -> int:
+            """Convert 16-bit unsigned to signed."""
+            return val - 65536 if val > 32767 else val
+
+        result: dict = {
+            # Status
+            "raw_status": reg(0, 0),
+            "online": reg(0, 0) == 1,
+
+            # PV
+            "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1, 0) else None,
+            "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2, 0) else None,
+
+            # Temperature
+            "temperature": reg(8),
+            "batteryTemperature": reg(9),
+
+            # Energy
+            "totalPowerGeneration": round(reg(12, 0) * 0.1, 2) if reg(12) else None,
+            "dailyPowerGeneration": round(reg(33, 0) * 0.1, 2) if reg(33) else None,
+
+            # Battery
+            "batterySOC": reg(17),
+            "batteryVoltage": round(reg(18, 0) * 0.1, 1) if reg(18) else None,
+            "batteryCurrent": round(signed(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None,
+            "batteryPower": signed(reg(52, 0)) if reg(52) is not None else None,
+
+            # Output / Load
+            "acPower": reg(24),
+            "loadPower": reg(28),
+            "inverterPower": reg(31),
+
+            # Grid
+            "gridVoltage": round(reg(54, 0) * 0.1, 1) if reg(54) else None,
+            "gridFrequency": round(reg(56, 0) * 0.1, 2) if reg(56) else None,
+            "gridPower": signed(reg(53, 0)) if reg(53) is not None else None,
+            "acCurrent": round(reg(57, 0) * 0.01, 2) if reg(57) else None,
+
+            # Raw registers for debugging
+            "_reg_count": len(registers),
+        }
+
+        # Calculate battery power from voltage × current
+        if result["batteryVoltage"] and result["batteryCurrent"]:
+            result["batteryPower"] = round(
+                result["batteryVoltage"] * result["batteryCurrent"], 1
+            )
+
+        return result
+
+    # ─────────────────────────────────────────────────────────────────────────
     # Logs & Events
     # ─────────────────────────────────────────────────────────────────────────
 
@@ -239,26 +381,29 @@ class MiniEmsApi:
         """Fetch all sensor data in one batch. Returns combined dict."""
         results = {}
 
-        # Overview (always fetch)
+        # 1. Overview (summary stats — currentPower, daily kWh, income...)
         try:
             results["overview"] = await self.async_get_overview()
         except Exception as err:
             _LOGGER.warning("Mini EMS fetch overview failed: %s", err)
             results["overview"] = {}
 
-        # Per-inverter real-time data
-        try:
-            if inverter_name:
-                inv = await self.async_get_inverter_data(inverter_name)
-                results["inverter"] = inv or {}
-            else:
-                rows = await self.async_get_inverter_list(page_size=50)
-                results["inverter"] = rows[0] if rows else {}
-        except Exception as err:
-            _LOGGER.warning("Mini EMS fetch inverter failed: %s", err)
+        # 2. Raw Modbus frame — primary source for per-inverter realtime sensors
+        if inverter_name:
+            try:
+                results["inverter"] = await self.async_get_latest_raw_frame(inverter_name)
+                _LOGGER.debug(
+                    "Mini EMS raw frame decoded: %d registers for %s",
+                    results["inverter"].get("_reg_count", 0),
+                    inverter_name,
+                )
+            except Exception as err:
+                _LOGGER.warning("Mini EMS fetch raw frame failed: %s", err)
+                results["inverter"] = {}
+        else:
             results["inverter"] = {}
 
-        # Station electricity
+        # 3. Station electricity (hourly kWh breakdown)
         try:
             results["electricity"] = await self.async_get_station_electricity()
         except Exception as err:

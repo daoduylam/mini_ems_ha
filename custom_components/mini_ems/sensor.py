@@ -155,8 +155,7 @@ OVERVIEW_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
 )
 
 INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
-    # Real-time inverter sensors (from /dn/system/data/list)
-    # PV Solar Input
+    # ── PV Solar Input ──────────────────────────────────────────────────────
     MiniEmsSensorDescription(
         key="pv1_voltage",
         name="PV1 Điện áp (PV1 Voltage)",
@@ -165,26 +164,6 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         state_class=SensorStateClass.MEASUREMENT,
         source="inverter",
         data_key="pv1Voltage",
-        icon="mdi:solar-panel",
-    ),
-    MiniEmsSensorDescription(
-        key="pv1_current",
-        name="PV1 Dòng điện (PV1 Current)",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="pv1Current",
-        icon="mdi:solar-panel",
-    ),
-    MiniEmsSensorDescription(
-        key="pv1_power",
-        name="PV1 Công suất (PV1 Power)",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="pv1Power",
         icon="mdi:solar-panel",
     ),
     MiniEmsSensorDescription(
@@ -197,60 +176,10 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         data_key="pv2Voltage",
         icon="mdi:solar-panel-large",
     ),
-    MiniEmsSensorDescription(
-        key="pv2_current",
-        name="PV2 Dòng điện (PV2 Current)",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="pv2Current",
-        icon="mdi:solar-panel-large",
-    ),
-    MiniEmsSensorDescription(
-        key="pv2_power",
-        name="PV2 Công suất (PV2 Power)",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="pv2Power",
-        icon="mdi:solar-panel-large",
-    ),
-    MiniEmsSensorDescription(
-        key="pv_total_power",
-        name="Tổng PV Công suất (PV Total Power)",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="pvTotalPower",
-        icon="mdi:solar-power-variant",
-    ),
-    # AC Grid Output
-    MiniEmsSensorDescription(
-        key="ac_voltage",
-        name="AC Điện áp lưới (Grid Voltage)",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="acVoltage",
-        icon="mdi:transmission-tower",
-    ),
-    MiniEmsSensorDescription(
-        key="ac_current",
-        name="AC Dòng điện lưới (Grid Current)",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="acCurrent",
-        icon="mdi:transmission-tower",
-    ),
+    # ── AC Output ────────────────────────────────────────────────────────────
     MiniEmsSensorDescription(
         key="ac_power",
-        name="AC Công suất (AC Power)",
+        name="AC Công suất đầu ra (AC Output Power)",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
@@ -259,16 +188,67 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         icon="mdi:lightning-bolt",
     ),
     MiniEmsSensorDescription(
-        key="ac_frequency",
-        name="Tần số lưới (AC Frequency)",
+        key="ac_current",
+        name="AC Dòng điện đầu ra (AC Current)",
+        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
+        device_class=SensorDeviceClass.CURRENT,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="acCurrent",
+        icon="mdi:current-ac",
+    ),
+    MiniEmsSensorDescription(
+        key="inverter_power",
+        name="Biến tần công suất (Inverter Power)",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="inverterPower",
+        icon="mdi:lightning-bolt-circle",
+    ),
+    # ── Grid ────────────────────────────────────────────────────────────────
+    MiniEmsSensorDescription(
+        key="grid_voltage",
+        name="Điện áp lưới (Grid Voltage)",
+        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
+        device_class=SensorDeviceClass.VOLTAGE,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="gridVoltage",
+        icon="mdi:transmission-tower",
+    ),
+    MiniEmsSensorDescription(
+        key="grid_frequency",
+        name="Tần số lưới (Grid Frequency)",
         native_unit_of_measurement=UnitOfFrequency.HERTZ,
         device_class=SensorDeviceClass.FREQUENCY,
         state_class=SensorStateClass.MEASUREMENT,
         source="inverter",
-        data_key="acFrequency",
+        data_key="gridFrequency",
         icon="mdi:sine-wave",
     ),
-    # Battery
+    MiniEmsSensorDescription(
+        key="grid_power",
+        name="Lưới công suất (Grid Power +mua/-bán)",
+        native_unit_of_measurement=UnitOfPower.WATT,
+        device_class=SensorDeviceClass.POWER,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="gridPower",
+        icon="mdi:transmission-tower",
+    ),
+    # ── Battery ─────────────────────────────────────────────────────────────
+    MiniEmsSensorDescription(
+        key="battery_soc",
+        name="Pin SOC (Battery SOC)",
+        native_unit_of_measurement=PERCENTAGE,
+        device_class=SensorDeviceClass.BATTERY,
+        state_class=SensorStateClass.MEASUREMENT,
+        source="inverter",
+        data_key="batterySOC",
+        icon="mdi:battery-medium",
+    ),
     MiniEmsSensorDescription(
         key="battery_voltage",
         name="Pin Điện áp (Battery Voltage)",
@@ -281,33 +261,23 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
     ),
     MiniEmsSensorDescription(
         key="battery_current",
-        name="Pin Dòng điện (Battery Current)",
+        name="Pin Dòng điện (Battery Current +sạc/-xả)",
         native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
         device_class=SensorDeviceClass.CURRENT,
         state_class=SensorStateClass.MEASUREMENT,
         source="inverter",
         data_key="batteryCurrent",
-        icon="mdi:battery",
+        icon="mdi:battery-charging",
     ),
     MiniEmsSensorDescription(
         key="battery_power",
-        name="Pin Công suất (Battery Power)",
+        name="Pin Công suất (Battery Power +sạc/-xả)",
         native_unit_of_measurement=UnitOfPower.WATT,
         device_class=SensorDeviceClass.POWER,
         state_class=SensorStateClass.MEASUREMENT,
         source="inverter",
         data_key="batteryPower",
-        icon="mdi:battery-charging",
-    ),
-    MiniEmsSensorDescription(
-        key="battery_soc",
-        name="Pin SOC (Battery SOC)",
-        native_unit_of_measurement=PERCENTAGE,
-        device_class=SensorDeviceClass.BATTERY,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="batterySOC",
-        icon="mdi:battery-medium",
+        icon="mdi:battery-charging-outline",
     ),
     MiniEmsSensorDescription(
         key="battery_temperature",
@@ -319,7 +289,7 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         data_key="batteryTemperature",
         icon="mdi:thermometer",
     ),
-    # Load / House consumption
+    # ── Load ────────────────────────────────────────────────────────────────
     MiniEmsSensorDescription(
         key="load_power",
         name="Tải tiêu thụ (Load Power)",
@@ -330,68 +300,7 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         data_key="loadPower",
         icon="mdi:home-lightning-bolt",
     ),
-    MiniEmsSensorDescription(
-        key="load_voltage",
-        name="Tải điện áp (Load Voltage)",
-        native_unit_of_measurement=UnitOfElectricPotential.VOLT,
-        device_class=SensorDeviceClass.VOLTAGE,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="loadVoltage",
-        icon="mdi:home-lightning-bolt-outline",
-    ),
-    MiniEmsSensorDescription(
-        key="load_current",
-        name="Tải dòng điện (Load Current)",
-        native_unit_of_measurement=UnitOfElectricCurrent.AMPERE,
-        device_class=SensorDeviceClass.CURRENT,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="loadCurrent",
-        icon="mdi:home-lightning-bolt-outline",
-    ),
-    MiniEmsSensorDescription(
-        key="load_frequency",
-        name="Tải tần số (Load Frequency)",
-        native_unit_of_measurement=UnitOfFrequency.HERTZ,
-        device_class=SensorDeviceClass.FREQUENCY,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="loadFrequency",
-        icon="mdi:sine-wave",
-    ),
-    # Grid import/export
-    MiniEmsSensorDescription(
-        key="grid_power",
-        name="Lưới Công suất (Grid Power)",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="gridPower",
-        icon="mdi:transmission-tower",
-    ),
-    MiniEmsSensorDescription(
-        key="grid_energy_in_today",
-        name="Điện mua hôm nay (Grid Import Today)",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        source="inverter",
-        data_key="gridEnergyInToday",
-        icon="mdi:transmission-tower-import",
-    ),
-    MiniEmsSensorDescription(
-        key="grid_energy_out_today",
-        name="Điện bán hôm nay (Grid Export Today)",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        source="inverter",
-        data_key="gridEnergyOutToday",
-        icon="mdi:transmission-tower-export",
-    ),
-    # Inverter / Temperature
+    # ── Inverter Temperature ─────────────────────────────────────────────────
     MiniEmsSensorDescription(
         key="inverter_temperature",
         name="Nhiệt độ biến tần (Inverter Temp)",
@@ -399,42 +308,13 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         device_class=SensorDeviceClass.TEMPERATURE,
         state_class=SensorStateClass.MEASUREMENT,
         source="inverter",
-        data_key="inverterTemperature",
+        data_key="temperature",
         icon="mdi:thermometer",
     ),
+    # ── Energy totals from raw frame ─────────────────────────────────────────
     MiniEmsSensorDescription(
-        key="inverter_power",
-        name="Biến tần công suất (Inverter Power)",
-        native_unit_of_measurement=UnitOfPower.WATT,
-        device_class=SensorDeviceClass.POWER,
-        state_class=SensorStateClass.MEASUREMENT,
-        source="inverter",
-        data_key="inverterPower",
-        icon="mdi:lightning-bolt-circle",
-    ),
-    MiniEmsSensorDescription(
-        key="operation_hours",
-        name="Giờ hoạt động (Operation Hours)",
-        native_unit_of_measurement=UnitOfTime.HOURS,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        source="inverter",
-        data_key="operationHours",
-        icon="mdi:clock-time-eight",
-    ),
-    # Daily/Total energy from inverter record
-    MiniEmsSensorDescription(
-        key="daily_energy",
-        name="Sản lượng hôm nay (Daily Energy)",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        source="inverter",
-        data_key="dailyPowerGeneration",
-        icon="mdi:calendar-today",
-    ),
-    MiniEmsSensorDescription(
-        key="total_energy",
-        name="Tổng sản lượng biến tần (Total Energy)",
+        key="total_energy_raw",
+        name="Tổng sản lượng biến tần (Total kWh)",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
@@ -442,88 +322,24 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         data_key="totalPowerGeneration",
         icon="mdi:counter",
     ),
-    # Charge/Discharge energy today
     MiniEmsSensorDescription(
-        key="charger_energy_today",
-        name="Điện sạc pin hôm nay (Charge Energy Today)",
+        key="daily_energy_raw",
+        name="Sản lượng hôm nay biến tần (Daily kWh)",
         native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         device_class=SensorDeviceClass.ENERGY,
         state_class=SensorStateClass.TOTAL_INCREASING,
         source="inverter",
-        data_key="chargerEnergyToday",
-        icon="mdi:battery-arrow-up",
+        data_key="dailyPowerGeneration",
+        icon="mdi:calendar-today",
     ),
+    # ── Calculated ───────────────────────────────────────────────────────────
     MiniEmsSensorDescription(
-        key="dis_charger_energy_today",
-        name="Điện xả pin hôm nay (Discharge Energy Today)",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
+        key="system_status",
+        name="Trạng thái hệ thống (System Status)",
         source="inverter",
-        data_key="disChargerEnergyToday",
-        icon="mdi:battery-arrow-down",
+        value_fn=lambda d: _get_system_status(d),
+        icon="mdi:check-circle",
     ),
-    MiniEmsSensorDescription(
-        key="inversion_energy_out_today",
-        name="Điện nghịch lưu hôm nay (Inversion Out Today)",
-        native_unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
-        device_class=SensorDeviceClass.ENERGY,
-        state_class=SensorStateClass.TOTAL_INCREASING,
-        source="inverter",
-        data_key="inversionEnergyOutToday",
-        icon="mdi:lightning-bolt",
-    ),
-    # Status
-    MiniEmsSensorDescription(
-        key="inverter_name",
-        name="Tên biến tần (Inverter Name)",
-        source="inverter",
-        data_key="inverterName",
-        icon="mdi:tag",
-    ),
-    MiniEmsSensorDescription(
-        key="inverter_model",
-        name="Model biến tần",
-        source="inverter",
-        data_key="equipmentModel",
-        icon="mdi:information",
-    ),
-    MiniEmsSensorDescription(
-        key="firmware_version",
-        name="Firmware Version",
-        source="inverter",
-        data_key="firmware",
-        icon="mdi:chip",
-    ),
-    MiniEmsSensorDescription(
-        key="upgrade_status",
-        name="Trạng thái nâng cấp (Upgrade Status)",
-        source="inverter",
-        data_key="upgradeStatus",
-        icon="mdi:update",
-    ),
-    MiniEmsSensorDescription(
-        key="device_type",
-        name="Loại thiết bị (Device Type)",
-        source="inverter",
-        data_key="deviceType",
-        icon="mdi:devices",
-    ),
-    MiniEmsSensorDescription(
-        key="power_station_name",
-        name="Tên trạm điện (Power Station)",
-        source="inverter",
-        data_key="powerName",
-        icon="mdi:solar-power-variant",
-    ),
-    MiniEmsSensorDescription(
-        key="collector_name",
-        name="Tên collector (Collector)",
-        source="inverter",
-        data_key="collectorName",
-        icon="mdi:router-wireless",
-    ),
-    # Calculated / derived
     MiniEmsSensorDescription(
         key="self_consumption_ratio",
         name="Tỷ lệ tự tiêu thụ (Self Consumption %)",
@@ -533,41 +349,34 @@ INVERTER_SENSORS: tuple[MiniEmsSensorDescription, ...] = (
         value_fn=lambda d: _calc_self_consumption(d),
         icon="mdi:home-percent",
     ),
-    MiniEmsSensorDescription(
-        key="system_status",
-        name="Trạng thái hệ thống (System Status)",
-        source="inverter",
-        value_fn=lambda d: _get_system_status(d),
-        icon="mdi:check-circle",
-    ),
 )
 
 
 def _calc_self_consumption(data: dict) -> float | None:
-    """Calculate self-consumption ratio."""
-    pv = data.get("pvTotalPower") or data.get("pv1Power", 0)
-    load = data.get("loadPower") or data.get("acPower", 0)
-    if not pv or pv <= 0:
+    """Calculate self-consumption ratio: load / ac_output."""
+    ac = data.get("acPower") or data.get("inverterPower") or 0
+    load = data.get("loadPower") or 0
+    if not ac or ac <= 0:
         return None
-    ratio = min(load / pv * 100, 100)
+    ratio = min(load / ac * 100, 100)
     return round(ratio, 1)
 
 
 def _get_system_status(data: dict) -> str:
-    """Get human-readable system status."""
-    batt = data.get("batteryPower", 0) or 0
-    grid = data.get("gridPower", 0) or 0
-    pv = data.get("pvTotalPower") or data.get("pv1Power", 0) or 0
+    """Get human-readable system status from Modbus decoded fields."""
+    batt_power = data.get("batteryPower") or 0
+    grid_power = data.get("gridPower") or 0  # positive = import, negative = export
+    ac_power = data.get("acPower") or 0
 
-    if pv > 10 and batt > 5:
+    if ac_power > 10 and batt_power > 5:
         return "Mặt trời + Sạc pin"
-    elif pv > 10 and grid < 0:
+    elif ac_power > 10 and grid_power < -10:
         return "Hòa lưới (bán điện)"
-    elif pv > 10:
-        return "Mặt trời"
-    elif batt < -5:
+    elif ac_power > 10:
+        return "Phát điện mặt trời"
+    elif batt_power < -5:
         return "Xả pin"
-    elif grid > 10:
+    elif grid_power > 10:
         return "Mua điện lưới"
     else:
         return "Chờ"
