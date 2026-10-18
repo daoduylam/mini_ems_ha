@@ -1,0 +1,7 @@
+{
+  "domain": "mini_ems",
+  "name": "Mini EMS - Donnergy Inverter",
+  "documentation": "https://github.com/duylamstore/mini_ems_ha",
+  "issue_tracker": "https://github.com/duylamstore/mini_ems_ha/issues",
+  "homeassistant": "2024.1.0"
+}

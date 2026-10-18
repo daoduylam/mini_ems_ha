@@ -1,0 +1,40 @@
+{
+  "config": {
+    "title": "Mini EMS - Donnergy Inverter",
+    "step": {
+      "user": {
+        "title": "Đăng nhập Mini EMS",
+        "description": "Nhập thông tin tài khoản tại https://mini-ems.com",
+        "data": {
+          "username": "Tên tài khoản (Username)",
+          "password": "Mật khẩu (Password)"
+        }
+      },
+      "select_inverter": {
+        "title": "Chọn biến tần",
+        "description": "Chọn biến tần bạn muốn giám sát",
+        "data": {
+          "inverter_id": "Biến tần (Inverter)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Tên tài khoản hoặc mật khẩu không đúng",
+      "cannot_connect": "Không thể kết nối đến máy chủ Mini EMS",
+      "unknown": "Lỗi không xác định"
+    },
+    "abort": {
+      "already_configured": "Thiết bị đã được cấu hình"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Tùy chỉnh Mini EMS",
+        "data": {
+          "scan_interval": "Chu kỳ cập nhật (giây)"
+        }
+      }
+    }
+  }
+}
