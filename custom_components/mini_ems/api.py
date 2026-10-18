@@ -123,7 +123,7 @@ class MiniEmsApi:
     # ─────────────────────────────────────────────────────────────────────────
 
     async def async_get_inverter_list(self, page: int = 1, page_size: int = 50) -> list[dict]:
-        """Get list of all inverters with real-time sensor data."""
+        """Get list of inverters. Tries filtered search first."""
         data = await self._post(
             "/dn/system/data/list",
             body={},
@@ -131,13 +131,40 @@ class MiniEmsApi:
         )
         return data.get("rows", [])
 
-    async def async_get_inverter_data(self, inverter_id: int) -> dict | None:
-        """Get real-time data for a specific inverter by ID."""
-        devices = await self.async_get_inverter_list(page_size=200)
-        for dev in devices:
-            if dev.get("inverterId") == inverter_id:
+    async def async_get_all_inverters(self) -> list[dict]:
+        """Get ALL inverters across multiple pages (for reseller accounts)."""
+        all_rows = []
+        for page in range(1, 10):
+            data = await self._post(
+                "/dn/system/data/list",
+                body={},
+                params={"pageNum": page, "pageSize": 50},
+            )
+            rows = data.get("rows", [])
+            all_rows.extend(rows)
+            total = data.get("total", 0)
+            if len(all_rows) >= total or not rows:
+                break
+        return all_rows
+
+    async def async_get_inverter_data(self, inverter_name: str) -> dict | None:
+        """Get real-time data for a specific inverter by serial number."""
+        # Try with name filter in body
+        data = await self._post(
+            "/dn/system/data/list",
+            body={"inverterName": inverter_name},
+            params={"pageNum": 1, "pageSize": 20},
+        )
+        rows = data.get("rows", [])
+        for dev in rows:
+            if dev.get("inverterName") == inverter_name:
                 return dev
-        return None
+        # Fallback: scan all pages
+        all_devs = await self.async_get_all_inverters()
+        for dev in all_devs:
+            if dev.get("inverterName") == inverter_name:
+                return dev
+        return rows[0] if rows else None
 
     # ─────────────────────────────────────────────────────────────────────────
     # Station Electricity (daily/monthly kWh breakdown)
@@ -208,31 +235,34 @@ class MiniEmsApi:
     # All data for coordinator (single call batch)
     # ─────────────────────────────────────────────────────────────────────────
 
-    async def async_fetch_all(self, inverter_id: int | None = None) -> dict:
+    async def async_fetch_all(self, inverter_name: str | None = None) -> dict:
         """Fetch all sensor data in one batch. Returns combined dict."""
-        import asyncio
-
-        tasks = {
-            "overview": self.async_get_overview(),
-            "inverters": self.async_get_inverter_list(page_size=100),
-            "electricity": self.async_get_station_electricity(),
-        }
-
         results = {}
-        for key, coro in tasks.items():
-            try:
-                results[key] = await coro
-            except Exception as err:
-                _LOGGER.warning("Mini EMS fetch_all[%s] failed: %s", key, err)
-                results[key] = {} if key == "overview" else []
 
-        # Extract specific inverter if requested
-        if inverter_id:
-            results["inverter"] = next(
-                (d for d in results["inverters"] if d.get("inverterId") == inverter_id),
-                {},
-            )
-        else:
-            results["inverter"] = results["inverters"][0] if results["inverters"] else {}
+        # Overview (always fetch)
+        try:
+            results["overview"] = await self.async_get_overview()
+        except Exception as err:
+            _LOGGER.warning("Mini EMS fetch overview failed: %s", err)
+            results["overview"] = {}
+
+        # Per-inverter real-time data
+        try:
+            if inverter_name:
+                inv = await self.async_get_inverter_data(inverter_name)
+                results["inverter"] = inv or {}
+            else:
+                rows = await self.async_get_inverter_list(page_size=50)
+                results["inverter"] = rows[0] if rows else {}
+        except Exception as err:
+            _LOGGER.warning("Mini EMS fetch inverter failed: %s", err)
+            results["inverter"] = {}
+
+        # Station electricity
+        try:
+            results["electricity"] = await self.async_get_station_electricity()
+        except Exception as err:
+            _LOGGER.warning("Mini EMS fetch electricity failed: %s", err)
+            results["electricity"] = []
 
         return results

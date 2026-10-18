@@ -29,7 +29,8 @@ class MiniEmsCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry) -> None:
         """Initialize coordinator."""
         self.entry = entry
-        self.inverter_id: int | None = entry.data.get(CONF_INVERTER_ID)
+        # Use inverter_name (serial number) to identify the device
+        self.inverter_name: str | None = entry.data.get("inverter_name")
 
         session = async_get_clientsession(hass, verify_ssl=False)
         self.api = MiniEmsApi(
@@ -53,12 +54,11 @@ class MiniEmsCoordinator(DataUpdateCoordinator):
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API."""
         try:
-            return await self.api.async_fetch_all(inverter_id=self.inverter_id)
+            return await self.api.async_fetch_all(inverter_name=self.inverter_name)
         except MiniEmsAuthError as err:
-            # Try re-login once
             try:
                 await self.api.async_login()
-                return await self.api.async_fetch_all(inverter_id=self.inverter_id)
+                return await self.api.async_fetch_all(inverter_name=self.inverter_name)
             except MiniEmsApiError as err2:
                 raise UpdateFailed(f"Auth failed: {err2}") from err2
         except MiniEmsApiError as err:

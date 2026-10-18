@@ -63,24 +63,31 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
                     CONF_PASSWORD: user_input[CONF_PASSWORD],
                     "user_id": str(login_result.get("userId", "")),
                 }
-                # Fetch inverter list for selection
-                try:
-                    inverters = await api.async_get_inverter_list(page_size=100)
-                    self._inverter_list = inverters
-                    if inverters:
-                        return await self.async_step_select_inverter()
-                except Exception:
-                    pass
 
-                # If no inverter list, use first overview
-                overview = await api.async_get_overview()
-                return self.async_create_entry(
-                    title=f"Mini EMS - {user_input[CONF_USERNAME]}",
-                    data={
-                        **self._login_data,
-                        CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
-                    },
-                )
+                # Nếu user nhập thẳng serial number
+                manual_serial = user_input.get("inverter_serial", "").strip()
+                if manual_serial:
+                    return self.async_create_entry(
+                        title=f"Mini EMS - {manual_serial}",
+                        data={
+                            **self._login_data,
+                            "inverter_name": manual_serial,
+                            CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
+                        },
+                    )
+
+                # Lấy danh sách từ API (tất cả trang)
+                try:
+                    self._inverter_list = await api.async_get_all_inverters()
+                except Exception:
+                    self._inverter_list = await api.async_get_inverter_list(page_size=50)
+
+                if self._inverter_list:
+                    return await self.async_step_select_inverter()
+
+                # Không tìm thấy thiết bị → cho nhập thủ công
+                errors["base"] = "no_devices"
+
             except MiniEmsAuthError:
                 errors["base"] = "invalid_auth"
             except MiniEmsApiError:
@@ -96,11 +103,15 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
                     vol.Required(CONF_PASSWORD): TextSelector(
                         TextSelectorConfig(type=TextSelectorType.PASSWORD, autocomplete="current-password")
                     ),
+                    vol.Optional("inverter_serial", default=""): TextSelector(
+                        TextSelectorConfig(type=TextSelectorType.TEXT)
+                    ),
                 }
             ),
             errors=errors,
             description_placeholders={
                 "url": "https://mini-ems.com",
+                "serial_hint": "Nhập serial number biến tần (VD: DBC2511007) hoặc để trống để chọn từ danh sách",
             },
         )
 
@@ -109,18 +120,20 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Select which inverter to monitor."""
         if user_input is not None:
-            inv_id = int(user_input["inverter_id"].split("|")[0].strip())
-            inv_name = user_input["inverter_id"].split("|")[-1].strip() if "|" in user_input["inverter_id"] else ""
+            # Format: "16389 | DBC2511007"
+            selected = user_input["inverter_id"]
+            parts = selected.split("|")
+            inv_name = parts[-1].strip() if len(parts) > 1 else parts[0].strip()
             inv_data = next(
-                (d for d in self._inverter_list if d.get("inverterId") == inv_id),
+                (d for d in self._inverter_list if d.get("inverterName") == inv_name),
                 {},
             )
             return self.async_create_entry(
-                title=f"Mini EMS - {inv_data.get('inverterName', inv_name or 'Inverter')}",
+                title=f"Mini EMS - {inv_name}",
                 data={
                     **self._login_data,
-                    CONF_INVERTER_ID: inv_id,
-                    "inverter_name": inv_data.get("inverterName", ""),
+                    "inverter_name": inv_name,
+                    CONF_INVERTER_ID: inv_data.get("inverterId"),
                     "power_id": inv_data.get("powerId", ""),
                     CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
                 },
@@ -130,12 +143,12 @@ class MiniEmsConfigFlow(ConfigFlow, domain=DOMAIN):
         for inv in self._inverter_list[:20]:
             inv_id = inv.get("inverterId", "")
             inv_name = inv.get("inverterName", f"ID-{inv_id}")
-            power = inv.get("currentPower", inv.get("acPower", ""))
+            power = inv.get("currentPower") or inv.get("acPower", "")
             label = f"{inv_id} | {inv_name}" + (f" ({power}W)" if power else "")
             options.append(label)
 
         if not options:
-            options = ["0 | Default Inverter"]
+            options = ["0 | Unknown"]
 
         return self.async_show_form(
             step_id="select_inverter",
