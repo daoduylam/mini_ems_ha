@@ -254,82 +254,67 @@ class MiniEmsApi:
 
         ac_p = reg(24) or reg(31) or reg(42)
 
+        # ── Battery ─────────────────────────────────────────────────
+        # R17=SOC%, R18=voltage×0.1 (if 0 or None, fallback to calculated from BMS or None)
+        batt_soc = reg(17) or reg(19)
+        batt_volt = round(reg(18, 0) * 0.1, 1) if reg(18) else None
+        # If R18 is 0 at night (standby/sleep), provide realistic battery voltage if SOC exists
+        if not batt_volt and batt_soc:
+            batt_volt = round(48.0 + (batt_soc / 100.0) * 5.2, 1)
+
+        # R44 is battery power (W) signed: positive = charging, negative = discharging
+        batt_power = signed16(reg(44, 0)) if reg(44) is not None else 0
+
+        # Battery current (A) = Power / Voltage
+        batt_curr = None
+        if batt_volt and batt_volt > 0 and batt_power is not None:
+            batt_curr = round(batt_power / batt_volt, 2)
+
+        # ── AC Output & Inverter Power ──────────────────────────────
+        load_p = reg(43)
+        if load_p is None:
+            load_p = ac_p
+
         result: dict = {
             # ── Status ──────────────────────────────────────────────────
             "raw_status": reg(0, 0),
             "online": reg(0, 0) == 1,
 
             # ── PV Input ────────────────────────────────────────────────
-            "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1) else None,
-            "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2) else None,
+            "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1) else 0.0,
+            "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2) else 0.0,
+
+            # ── Temperature ─────────────────────────────────────────────
+            "temperature": reg(8),
+            "batteryTemperature": reg(10),
+
+            # ── Energy ──────────────────────────────────────────────────
+            "totalPowerGeneration": round(reg(12, 0) * 0.1, 2) if reg(12) else None,
+            "dailyPowerGeneration": None,
 
             # ── Battery ─────────────────────────────────────────────────
-            # R17=SOC%, R18=voltage×0.1 (if 0 or None, fallback to calculated from BMS or None)
-            batt_soc = reg(17) or reg(19)
-            batt_volt = round(reg(18, 0) * 0.1, 1) if reg(18) else None
-            # If R18 is 0 at night (standby/sleep), provide realistic battery voltage if SOC exists
-            if not batt_volt and batt_soc:
-                batt_volt = round(48.0 + (batt_soc / 100.0) * 5.2, 1)
+            "batterySOC": batt_soc,
+            "batteryVoltage": batt_volt,
+            "batteryPower": batt_power,
+            "batteryCurrent": batt_curr,
 
-            # R44 is battery power (W) signed: positive = charging, negative = discharging
-            batt_power = signed16(reg(44, 0)) if reg(44) is not None else 0
+            # ── AC Output & Inverter ────────────────────────────────────
+            "acPower": ac_p,
+            "inverterPower": ac_p,
 
-            # Battery current (A) = Power / Voltage
-            batt_curr = None
-            if batt_volt and batt_volt > 0 and batt_power is not None:
-                batt_curr = round(batt_power / batt_volt, 2)
+            # ── Load (Nhà tiêu thụ) ─────────────────────────────────────
+            "loadPower": load_p,
 
-            # ── AC Output & Inverter Power ──────────────────────────────
-            # R24 / R31 / R42 is AC output power
-            # Load power: R43 is the dedicated house load register!
-            load_p = reg(43)
-            # If load_p is not available, calculate from AC power and grid power
-            if load_p is None:
-                load_p = ac_p
+            # ── Grid (Lưới điện) ────────────────────────────────────────
+            "gridVoltage": round(reg(53, 0) * 0.1, 1) if reg(53) else None,
+            "gridFrequency": round(reg(41, 0) * 0.1, 2) if reg(41) else None,
+            "gridPower": signed16(reg(51, 0)) if reg(51) is not None else None,
+            "gridCurrent": round(signed16(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None,
+            "acCurrent": round(reg(56, 0) * 0.01, 2) if reg(56) else None,
 
-            result: dict = {
-                # ── Status ──────────────────────────────────────────────────
-                "raw_status": reg(0, 0),
-                "online": reg(0, 0) == 1,
-
-                # ── PV Input ────────────────────────────────────────────────
-                "pv1Voltage": round(reg(1, 0) * 0.1, 1) if reg(1) else 0.0,
-                "pv2Voltage": round(reg(2, 0) * 0.1, 1) if reg(2) else 0.0,
-
-                # ── Temperature ─────────────────────────────────────────────
-                "temperature": reg(8),
-                "batteryTemperature": reg(10),
-
-                # ── Energy ──────────────────────────────────────────────────
-                "totalPowerGeneration": round(reg(12, 0) * 0.1, 2) if reg(12) else None,
-                "dailyPowerGeneration": None,
-
-                # ── Battery ─────────────────────────────────────────────────
-                "batterySOC": batt_soc,
-                "batteryVoltage": batt_volt,
-                "batteryPower": batt_power,
-                "batteryCurrent": batt_curr,
-
-                # ── AC Output & Inverter ────────────────────────────────────
-                "acPower": ac_p,
-                "inverterPower": ac_p,
-
-                # ── Load (Nhà tiêu thụ) ─────────────────────────────────────
-                "loadPower": load_p,
-
-                # ── Grid (Lưới điện) ────────────────────────────────────────
-                "gridVoltage": round(reg(53, 0) * 0.1, 1) if reg(53) else None,
-                "gridFrequency": round(reg(41, 0) * 0.1, 2) if reg(41) else None,
-                "gridPower": signed16(reg(51, 0)) if reg(51) is not None else None,
-                "gridCurrent": round(signed16(reg(52, 0)) * 0.01, 2) if reg(52) is not None else None,
-                "acCurrent": round(reg(56, 0) * 0.01, 2) if reg(56) else None,
-
-                # ── Raw Packet Metadata ─────────────────────────────────────
-                "_reg_count": len(registers),
-                "_raw_frame_id": detail_rows[0].get("rawDataId"),
-                "_raw_time": detail_rows[0].get("dateByTimeZone"),
-                "_raw_data": detail_rows[0].get("rawDataPart"),
-            }
+            # ── Raw Packet Metadata ─────────────────────────────────────
+            "_reg_count": len(registers),
+        }
 
         return result
 
