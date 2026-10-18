@@ -64,9 +64,11 @@ class MiniEmsGridExportSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEntit
         await self._send_command(0)
 
     async def _send_command(self, value: int) -> None:
+        inv_name = self._entry.data.get("inverter_name")
         inv_id = self._entry.data.get("inverter_id")
         try:
             await self.coordinator.api.async_send_instruction({
+                "inverterName": inv_name,
                 "inverterId": inv_id,
                 "gridExport": value,
                 "type": "gridExport",
@@ -107,9 +109,11 @@ class MiniEmsForceChargeSwitch(CoordinatorEntity[MiniEmsCoordinator], SwitchEnti
         await self._send_command(0)
 
     async def _send_command(self, value: int) -> None:
+        inv_name = self._entry.data.get("inverter_name")
         inv_id = self._entry.data.get("inverter_id")
         try:
             await self.coordinator.api.async_send_instruction({
+                "inverterName": inv_name,
                 "inverterId": inv_id,
                 "forceCharge": value,
                 "type": "forceCharge",
