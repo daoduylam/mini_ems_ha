@@ -317,23 +317,38 @@ custom_fields:
         var inv_power = Math.round(getNum('sensor.mini_ems_dbc2511007_bien_tan_cong_suat_inverter_power', ac_p));
 
         // Phân loại sạc / xả pin
-        var batChargeW = bat_w > 5 ? bat_w : 0;
-        var batDischargeW = bat_w < -5 ? Math.abs(bat_w) : 0;
+        var batChargeW = bat_w > 3 ? bat_w : 0;
+        var batDischargeW = bat_w < -3 ? Math.abs(bat_w) : 0;
 
         // Phân loại lưới điện EVN
-        var gridImport = grid_p > 5 ? grid_p : 0;
-        var gridExport = grid_p < -5 ? Math.abs(grid_p) : 0;
-        var actualHouseLoad = load_p > 0 ? load_p : (batDischargeW > 0 ? batDischargeW : (ac_p > 0 ? ac_p : 0));
+        var gridImport = grid_p > 3 ? grid_p : 0;
+        var gridExport = grid_p < -3 ? Math.abs(grid_p) : 0;
+
+        // Tính tải thực tế bằng cân bằng năng lượng:
+        // Tải = PV + Pin xả + Mua lưới - Sạc pin - Bán lưới
+        var energyBalanceLoad = Math.max(0, Math.round(pvTotal + batDischargeW + gridImport - batChargeW - gridExport));
+        var actualHouseLoad = load_p > 5 ? load_p : (ac_p > 5 ? ac_p : (energyBalanceLoad > 0 ? energyBalanceLoad : 0));
 
         // Trạng thái hệ thống
         var systemStatusEntity = getStr('sensor.mini_ems_dbc2511007_trang_thai_he_thong_system_status', '');
         var inverterStatus = systemStatusEntity || 'SẴN SÀNG';
         var inverterStatusColor = '#34d399';
-        if (gridImport > 10) { inverterStatus = 'MUA ĐIỆN'; inverterStatusColor = '#34d399'; }
-        else if (gridExport > 10) { inverterStatus = 'HÒA LƯỚI'; inverterStatusColor = '#38bdf8'; }
-        else if (batChargeW > 10) { inverterStatus = 'SẠC PIN'; inverterStatusColor = '#34d399'; }
-        else if (batDischargeW > 10) { inverterStatus = 'XẢ PIN'; inverterStatusColor = '#fbbf24'; }
-        else if (pvTotal > 10) { inverterStatus = 'MẶT TRỜI'; inverterStatusColor = '#fbbf24'; }
+        if (gridImport > 10) {
+          inverterStatus = pvTotal > 10 ? 'SOLAR+LƯỚI' : (batDischargeW > 10 ? 'PIN+LƯỚI' : 'MUA ĐIỆN');
+          inverterStatusColor = '#f59e0b';
+        } else if (gridExport > 10) {
+          inverterStatus = 'HÒA LƯỚI'; inverterStatusColor = '#38bdf8';
+        } else if (pvTotal > 10 && batDischargeW > 10) {
+          inverterStatus = 'SOLAR+PIN'; inverterStatusColor = '#fbbf24';
+        } else if (pvTotal > 10 && batChargeW > 10) {
+          inverterStatus = 'SẠC PIN'; inverterStatusColor = '#10b981';
+        } else if (pvTotal > 10) {
+          inverterStatus = 'MẶT TRỜI'; inverterStatusColor = '#fbbf24';
+        } else if (batDischargeW > 10) {
+          inverterStatus = 'XẢ PIN'; inverterStatusColor = '#f59e0b';
+        } else if (batChargeW > 10) {
+          inverterStatus = 'SẠC PIN'; inverterStatusColor = '#34d399';
+        }
 
         // Tỷ lệ tự dùng
         var selfRatio = getNum('sensor.mini_ems_dbc2511007_ty_le_tu_tieu_thu_self_consumption', 0);
@@ -416,7 +431,8 @@ custom_fields:
           gridPathSvg = `<path d="M 710 85 C 590 85, 540 230, 460 230" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
         }
 
-        var housePathSvg = actualHouseLoad > 5
+        var isAnyPowerFlowing = pvTotal > 5 || batDischargeW > 3 || gridImport > 3;
+        var housePathSvg = (actualHouseLoad > 3 || isAnyPowerFlowing)
           ? `<path d="M 460 270 C 540 270, 590 415, 710 415" fill="none" stroke="url(#g-house)" stroke-width="3.5" class="pulse-line-fwd" marker-end="url(#ar-cyan)" /><circle cx="702" cy="415" r="5" fill="#00f2fe" filter="drop-shadow(0 0 10px #00f2fe)" />`
           : `<path d="M 460 270 C 540 270, 590 415, 710 415" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="5,6" opacity="0.4" />`;
 
@@ -653,51 +669,86 @@ custom_fields:
 
                     <!-- BIẾN TẦN TRUNG TÂM -->
                     <g transform="translate(440, 250)">
-                      <circle cx="0" cy="0" r="52" fill="rgba(15,23,42,0.95)" stroke="#38bdf8" stroke-width="2.5" filter="drop-shadow(0 0 15px rgba(56,189,248,0.35))" />
-                      <path d="M -16 -6 C -8 -18, 8 6, 16 -6 M -16 6 C -8 -6, 8 18, 16 6" fill="none" stroke="#38bdf8" stroke-width="2.5" stroke-linecap="round" />
-                      <rect x="-42" y="58" width="84" height="24" rx="8" fill="rgba(15,23,42,0.9)" stroke="rgba(255,255,255,0.15)" stroke-width="1" />
-                      <text x="0" y="74" text-anchor="middle" fill="#fff" font-size="11" font-weight="800">${inverterStatus}</text>
+                      <circle cx="0" cy="0" r="54" fill="rgba(15,23,42,0.95)" stroke="${inverterStatusColor}" stroke-width="2.5" filter="drop-shadow(0 0 18px ${inverterStatusColor}66)" />
+                      <!-- Label BIẾN TẦN trên -->
+                      <text x="0" y="-35" text-anchor="middle" fill="#94a3b8" font-size="10" font-weight="700">BIẾN TẦN</text>
+                      <!-- Icon sóng sin -->
+                      <path d="M -20 -6 C -10 -20, 10 8, 20 -6 M -20 6 C -10 -8, 10 20, 20 6" fill="none" stroke="${inverterStatusColor}" stroke-width="2.5" stroke-linecap="round" />
+                      <!-- Badge trạng thái dưới - chữ TO, màu động -->
+                      <rect x="-52" y="60" width="104" height="32" rx="10" fill="rgba(0,0,0,0.75)" stroke="${inverterStatusColor}" stroke-width="1.5" />
+                      <text x="0" y="82" text-anchor="middle" fill="${inverterStatusColor}" font-size="15" font-weight="900" letter-spacing="0.5">${inverterStatus}</text>
                     </g>
 
                     <!-- PV1 QUANG ĐIỆN -->
                     <g transform="translate(110, 60)">
-                      <rect x="-35" y="-30" width="70" height="55" rx="14" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.5" />
-                      <path d="M -16 -12 L 16 -12 M -16 0 L 16 0 M -16 12 L 16 12 M 0 -18 L 0 18" stroke="#fbbf24" stroke-width="1.8" />
-                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
-                      <text x="0" y="49" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="900">${pv1_w} W</text>
+                      <!-- Nền panel -->
+                      <rect x="-36" y="-32" width="72" height="56" rx="14" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.5" />
+                      <!-- Icon tấm pin mặt trời (chia ô) -->
+                      <rect x="-22" y="-20" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="4" y="-20" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="-22" y="-3" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="4" y="-3" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <!-- Nhãn PV1 -->
+                      <text x="0" y="38" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700">PV1</text>
+                      <!-- Giá trị W -->
+                      <rect x="-42" y="44" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
+                      <text x="0" y="62" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="900">${pv1_w} W</text>
                     </g>
 
                     <!-- PV2 QUANG ĐIỆN -->
                     <g transform="translate(110, 225)">
-                      <rect x="-35" y="-30" width="70" height="55" rx="14" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.5" />
-                      <path d="M -16 -12 L 16 -12 M -16 0 L 16 0 M -16 12 L 16 12 M 0 -18 L 0 18" stroke="#fbbf24" stroke-width="1.8" />
-                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
-                      <text x="0" y="49" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="900">${pv2_w} W</text>
+                      <rect x="-36" y="-32" width="72" height="56" rx="14" fill="rgba(251,191,36,0.15)" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="-22" y="-20" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="4" y="-20" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="-22" y="-3" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <rect x="4" y="-3" width="18" height="14" rx="2" fill="none" stroke="#fbbf24" stroke-width="1.5" />
+                      <text x="0" y="38" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700">PV2</text>
+                      <rect x="-42" y="44" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(251,191,36,0.4)" stroke-width="1.2" />
+                      <text x="0" y="62" text-anchor="middle" fill="#fbbf24" font-size="14" font-weight="900">${pv2_w} W</text>
                     </g>
 
                     <!-- PIN BMS -->
                     <g transform="translate(110, 390)">
-                      <rect x="-35" y="-32" width="70" height="58" rx="14" fill="rgba(16,185,129,0.15)" stroke="#10b981" stroke-width="1.5" />
-                      <rect x="-12" y="-20" width="24" height="34" rx="4" fill="none" stroke="#34d399" stroke-width="2" />
-                      <rect x="-5" y="-24" width="10" height="4" rx="1" fill="#34d399" />
-                      <rect x="-55" y="34" width="110" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(52,211,153,0.4)" stroke-width="1.2" />
-                      <text x="0" y="51" text-anchor="middle" fill="${batTextColor}" font-size="12" font-weight="900">${displayBatW > 0 ? '+' : ''}${displayBatW}W / ${bat_soc}%</text>
+                      <!-- Nền pin -->
+                      <rect x="-36" y="-34" width="72" height="60" rx="14" fill="rgba(16,185,129,0.15)" stroke="${batTextColor}" stroke-width="1.5" />
+                      <!-- Icon pin BMS với thanh fill SOC -->
+                      <rect x="-16" y="-26" width="32" height="40" rx="4" fill="none" stroke="#34d399" stroke-width="2" />
+                      <rect x="-6" y="-30" width="12" height="5" rx="2" fill="#34d399" />
+                      <!-- Fill pin theo SOC -->
+                      <rect x="-13" y="${-22 + (36 * (1 - bat_soc / 100))}" width="26" height="${36 * bat_soc / 100}" rx="2" fill="${batTextColor}" opacity="0.7" />
+                      <!-- Nhãn PIN -->
+                      <text x="0" y="40" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700">PIN ${bat_soc}%</text>
+                      <!-- Giá trị W -->
+                      <rect x="-55" y="46" width="110" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(52,211,153,0.4)" stroke-width="1.2" />
+                      <text x="0" y="64" text-anchor="middle" fill="${batTextColor}" font-size="13" font-weight="900">${displayBatW > 0 ? '+' : ''}${displayBatW} W</text>
                     </g>
 
                     <!-- LƯỚI EVN -->
                     <g transform="translate(770, 60)">
-                      <rect x="-40" y="-30" width="80" height="55" rx="14" fill="rgba(255,255,255,0.05)" stroke="${gridTextColor}" stroke-width="1.5" />
-                      <path d="M 0 -18 L -14 10 L 14 10 Z" fill="none" stroke="${gridTextColor}" stroke-width="2" />
-                      <rect x="-42" y="32" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" />
-                      <text x="0" y="49" text-anchor="middle" fill="${gridTextColor}" font-size="13" font-weight="900">${gridVal} W</text>
+                      <rect x="-40" y="-34" width="80" height="60" rx="14" fill="rgba(255,255,255,0.05)" stroke="${gridTextColor}" stroke-width="1.5" />
+                      <!-- Icon cột điện: cột + dây -->
+                      <line x1="0" y1="-26" x2="0" y2="18" stroke="${gridTextColor}" stroke-width="2.5" />
+                      <line x1="-18" y1="-14" x2="18" y2="-14" stroke="${gridTextColor}" stroke-width="2" />
+                      <line x1="-18" y1="-14" x2="-24" y2="-4" stroke="${gridTextColor}" stroke-width="1.5" />
+                      <line x1="18" y1="-14" x2="24" y2="-4" stroke="${gridTextColor}" stroke-width="1.5" />
+                      <circle cx="-18" cy="-14" r="3" fill="${gridTextColor}" />
+                      <circle cx="18" cy="-14" r="3" fill="${gridTextColor}" />
+                      <!-- Nhãn -->
+                      <text x="0" y="38" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700">LƯỚI EVN</text>
+                      <rect x="-42" y="44" width="84" height="26" rx="10" fill="rgba(15,23,42,0.9)" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" />
+                      <text x="0" y="62" text-anchor="middle" fill="${gridTextColor}" font-size="13" font-weight="900">${gridVal} W</text>
                     </g>
 
                     <!-- NHÀ TIÊU THỤ -->
                     <g transform="translate(770, 390)">
-                      <rect x="-42" y="-32" width="84" height="58" rx="14" fill="rgba(0,242,254,0.18)" stroke="#00f2fe" stroke-width="2" filter="drop-shadow(0 0 15px rgba(0,242,254,0.4))" />
-                      <path d="M 0 -18 L -18 -4 L -18 12 L 18 12 L 18 -4 Z" fill="#00f2fe" opacity="0.9" />
-                      <rect x="-55" y="34" width="110" height="30" rx="12" fill="rgba(15,23,42,0.95)" stroke="#00f2fe" stroke-width="1.5" />
-                      <text x="0" y="54" text-anchor="middle" fill="#00f2fe" font-size="16" font-weight="900">${actualHouseLoad} W</text>
+                      <rect x="-42" y="-36" width="84" height="68" rx="14" fill="rgba(0,242,254,0.18)" stroke="#00f2fe" stroke-width="2" filter="drop-shadow(0 0 15px rgba(0,242,254,0.4))" />
+                      <!-- Icon ngôi nhà -->
+                      <path d="M 0 -24 L -20 -8 L -20 12 L 20 12 L 20 -8 Z" fill="none" stroke="#00f2fe" stroke-width="2" stroke-linejoin="round" />
+                      <rect x="-6" y="-2" width="12" height="14" rx="2" fill="#00f2fe" opacity="0.6" />
+                      <!-- Nhãn TẢI NHÀ -->
+                      <text x="0" y="28" text-anchor="middle" fill="#94a3b8" font-size="9" font-weight="700">TẢI NHÀ</text>
+                      <rect x="-55" y="36" width="110" height="30" rx="12" fill="rgba(15,23,42,0.95)" stroke="#00f2fe" stroke-width="1.5" />
+                      <text x="0" y="57" text-anchor="middle" fill="#00f2fe" font-size="17" font-weight="900">${actualHouseLoad} W</text>
                     </g>
                   </svg>
                 </div>
@@ -1034,9 +1085,7 @@ custom_fields:
               </div>
             </div>
 
-            <!-- ======================================================== -->
-            <!-- HIỂN THỊ TRỰC TIẾP TOÀN BỘ 50 THỰC THỂ CỦA BỘ TÍCH HỢP     -->
-            <!-- ======================================================== -->
+            <!-- END -->
             <div class="glass-panel" style="border-top: 3px solid #8b5cf6; padding: 14px; margin-bottom: 0;">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
                 <div style="display: flex; align-items: center; gap: 8px;">
